@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Salonify.Api", "Salonify.Api.csproj", "{150FC81F-3941-6191-BB68-108CBF46F569}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{150FC81F-3941-6191-BB68-108CBF46F569}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{150FC81F-3941-6191-BB68-108CBF46F569}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{150FC81F-3941-6191-BB68-108CBF46F569}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{150FC81F-3941-6191-BB68-108CBF46F569}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7F6B4A8A-6B04-4E34-9C2D-0DE05913C188}
+	EndGlobalSection
+EndGlobal
