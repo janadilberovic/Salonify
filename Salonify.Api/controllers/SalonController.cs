@@ -86,5 +86,160 @@ public class SalonController : ControllerBase
         var salons = await _salonRepository.GetAllAsync();
         return Ok(salons);
     }
+
+    [Authorize(Roles = "Salon")]
+    [HttpPost("add-service")]
+    [Consumes("multipart/form-data")]
+   public async Task<IActionResult> AddService([FromForm] SalonServiceReq request)
+{
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    if (string.IsNullOrWhiteSpace(userId))
+        return Unauthorized(new { error = "Nedostaje userId u tokenu." });
+
+    var salon = await _salonRepository.GetByUserIdAsync(userId);
+
+    if (salon == null)
+        return NotFound(new { error = "Salon profil nije pronađen." });
+
+    string? imageUrl = null;
+
+    if (request.Image != null && request.Image.Length > 0)
+    {
+        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(request.Image.FileName)}";
+        var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "services");
+        Directory.CreateDirectory(folderPath);
+
+        var filePath = Path.Combine(folderPath, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await request.Image.CopyToAsync(stream);
+        }
+
+        imageUrl = $"/uploads/services/{fileName}";
+    }
+
+    var service = new SalonService
+    {
+        ServiceType = request.ServiceType,
+        Name = request.ServiceType.ToString(),
+        Price = request.Price,
+        DurationMinutes = request.DurationMinutes,
+        ImageUrl = imageUrl
+    };
+
+    await _salonRepository.AddServiceAsync(userId, service);
+
+    return NoContent();
 }
-//treba da pogledam ovo gde hvata sve salone 
+[Authorize(Roles = "Salon")]
+[HttpDelete("remove-service/{serviceType}")]
+public async Task<IActionResult> RemoveService(ServiceType serviceType)
+{
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    if (string.IsNullOrWhiteSpace(userId))
+        return Unauthorized(new { error = "Nedostaje userId u tokenu." });
+
+    var salon = await _salonRepository.GetByUserIdAsync(userId);
+
+    if (salon == null)
+        return NotFound(new { error = "Salon profil nije pronađen." });
+
+    await _salonRepository.RemoveServiceAsync(userId, serviceType);
+
+    return NoContent();
+
+}
+[Authorize(Roles = "Salon")]
+[HttpPut("update-service")]
+[Consumes("multipart/form-data")]
+public async Task<IActionResult> UpdateService([FromForm] SalonServiceReq request)
+{
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    if (string.IsNullOrWhiteSpace(userId))
+        return Unauthorized(new { error = "Nedostaje userId u tokenu." });
+
+    var salon = await _salonRepository.GetByUserIdAsync(userId);
+
+    if (salon == null)
+        return NotFound(new { error = "Salon profil nije pronađen." });
+
+    var existingService = salon.Services
+        .FirstOrDefault(s => s.ServiceType == request.ServiceType);
+
+    if (existingService == null)
+        return NotFound(new { error = "Usluga nije pronađena." });
+
+    string? imageUrl = existingService.ImageUrl;
+
+    if (request.Image != null && request.Image.Length > 0)
+    {
+        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(request.Image.FileName)}";
+        var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "services");
+        Directory.CreateDirectory(folderPath);
+
+        var filePath = Path.Combine(folderPath, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await request.Image.CopyToAsync(stream);
+        }
+
+        imageUrl = $"/uploads/services/{fileName}";
+    }
+
+    var updatedService = new SalonService
+    {
+        ServiceType = request.ServiceType,
+        Name = request.ServiceType.ToString(),
+        Price = request.Price,
+        DurationMinutes = request.DurationMinutes,
+        ImageUrl = imageUrl
+    };
+
+    await _salonRepository.UpdateServiceAsync(userId, updatedService);
+
+    return NoContent();
+}
+[HttpGet("specific-salon/{salonId}")]
+public async Task<IActionResult> GetSpecificSalon(string salonId)
+{
+    var salon = await _salonRepository.GetByIdAsync(salonId);
+
+    if (salon == null)
+        return NotFound(new { error = "Salon profil nije pronađen." });
+
+    return Ok(salon);
+}
+[Authorize(Roles = "Salon")]
+[HttpDelete("delete-salon/{salonId}")]
+public async Task<IActionResult> DeleteSalon(string salonId)
+{
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    if (string.IsNullOrWhiteSpace(userId))
+        return Unauthorized(new { error = "Nedostaje userId u tokenu." });
+
+    var salon = await _salonRepository.GetByUserIdAsync(userId);
+
+    if (salon == null)
+        return NotFound(new { error = "Salon profil nije pronađen." });
+
+    await _salonRepository.DeleteAsync(salonId);
+
+    return NoContent();
+}
+
+[HttpGet("get-services-from-salon/{userId}")]
+public async Task<IActionResult> GetServicesFromSalon(string userId)
+    {
+        var services = await _salonRepository.GetServicesAsync(userId);
+
+        return Ok(services);
+}
+       
+    
+}

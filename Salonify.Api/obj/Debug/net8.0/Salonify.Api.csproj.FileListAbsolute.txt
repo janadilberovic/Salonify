@@ -1,5 +1,6 @@
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\appsettings.Development.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\appsettings.json
+C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.staticwebassets.runtime.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.staticwebassets.endpoints.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.exe
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.deps.json
@@ -32,6 +33,7 @@ C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\obj\Debug\net8.0\Salonify.Api.
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\obj\Debug\net8.0\Salonify.Api.csproj.CoreCompileInputs.cache
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\obj\Debug\net8.0\Salonify.Api.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\obj\Debug\net8.0\Salonify.Api.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\obj\Debug\net8.0\Salonify.Api.sourcelink.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\obj\Debug\net8.0\rjimswa.dswa.cache.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
