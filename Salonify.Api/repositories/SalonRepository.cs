@@ -19,6 +19,7 @@ public class SalonRepository
     public async Task UpdateSalonProfileAsync(string userId, UpdateSalonProfileRequest updateRequest)
 {
     var update = Builders<Salon>.Update
+        .Set(s => s.Name, updateRequest.Name)
         .Set(s => s.Description, updateRequest.Description)
         .Set(s => s.Address, updateRequest.Address)
         .Set(s => s.City, updateRequest.City)
@@ -65,6 +66,7 @@ public async Task UpdateServiceAsync(string userId, SalonService updatedService)
     );
 
     var update = Builders<Salon>.Update
+        .Set("Services.$.Description", updatedService.Description)
         .Set("Services.$.Name", updatedService.Name)
         .Set("Services.$.Price", updatedService.Price)
         .Set("Services.$.DurationMinutes", updatedService.DurationMinutes)
@@ -89,6 +91,68 @@ public async Task<List<SalonService>> GetServicesAsync(string salonId)
 {
     var salon = await _salons.Find(s => s.Id == salonId).FirstOrDefaultAsync();
     return salon?.Services ?? new List<SalonService>();
+}
+
+public async Task<List<Salon>> GetByCityAsync(string city)
+{
+    if (string.IsNullOrWhiteSpace(city))
+        return await _salons.Find(_ => true).ToListAsync();
+
+    var normalizedCity = city.Trim().ToLower();
+
+    return await _salons
+        .Find(s => s.City.ToLower() == normalizedCity)
+        .ToListAsync();
+}
+public async Task<List<Salon>> GetByServiceTypeAsync(string serviceType)
+{
+    ServiceType parsedServiceType;
+    if (!Enum.TryParse(serviceType, true, out parsedServiceType))    {
+        throw new ArgumentException("Neispravan tip usluge.");
+    }
+    var filter = Builders<Salon>.Filter.ElemMatch(
+        s => s.Services,
+        service => service.ServiceType == parsedServiceType
+    );
+
+    return await _salons.Find(filter).ToListAsync();
+}
+public async Task<List<Salon>> SearchByNameAsync(string name)
+{
+    if (string.IsNullOrWhiteSpace(name))
+        return await _salons.Find(_ => true).ToListAsync();
+
+    var normalizedName = name.Trim().ToLower();
+
+    return await _salons
+        .Find(s => s.Name.ToLower().Contains(normalizedName))
+        .ToListAsync();
+}
+
+public async Task<List<Salon>> SearchByPrice(string serviceType,decimal? minPrice, decimal? maxPrice)
+{
+    ServiceType parsedServiceType;
+    if (!Enum.TryParse(serviceType, true, out parsedServiceType))    {
+        throw new ArgumentException("Neispravan tip usluge.");
+    }
+     var filter = Builders<Salon>.Filter.ElemMatch(
+        s => s.Services,
+        service =>
+            service.ServiceType == parsedServiceType &&
+            (!minPrice.HasValue || service.Price >= minPrice.Value) &&
+            (!maxPrice.HasValue || service.Price <= maxPrice.Value)
+    );
+
+    return await _salons.Find(filter).ToListAsync();
+    
+   /* var filter = Builders<Salon>.Filter.ElemMatch(
+        s => s.Services,
+        service =>
+            (!minPrice.HasValue || service.Price >= minPrice.Value) &&
+            (!maxPrice.HasValue || service.Price <= maxPrice.Value)
+    );
+
+    return await _salons.Find(filter).ToListAsync();*/
 }
 
 }

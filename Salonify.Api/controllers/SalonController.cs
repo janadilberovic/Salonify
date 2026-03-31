@@ -123,6 +123,7 @@ public class SalonController : ControllerBase
     var service = new SalonService
     {
         ServiceType = request.ServiceType,
+        Description = request.Description,
         Name = request.ServiceType.ToString(),
         Price = request.Price,
         DurationMinutes = request.DurationMinutes,
@@ -233,13 +234,39 @@ public async Task<IActionResult> DeleteSalon(string salonId)
     return NoContent();
 }
 
-[HttpGet("get-services-from-salon/{userId}")]
-public async Task<IActionResult> GetServicesFromSalon(string userId)
+[HttpGet("get-services-from-salon/{salonId}")]
+public async Task<IActionResult> GetServicesFromSalon(string salonId)
     {
-        var services = await _salonRepository.GetServicesAsync(userId);
+        var services = await _salonRepository.GetServicesAsync(salonId);
 
         return Ok(services);
 }
        
-    
+[HttpGet("get-by-city/{city}")]
+public async Task<IActionResult> GetByCity(string city)
+{
+    var salons = await _salonRepository.GetByCityAsync(city);
+    return Ok(salons);
+}   
+[HttpGet("search-by-service/{serviceType}")]
+public async Task<IActionResult> SearchByService(string serviceType)
+{
+    var salons = await _salonRepository.GetByServiceTypeAsync(serviceType);
+     if (salons == null || !salons.Any())
+    {
+        return Ok(new
+        {
+            message = "Ne postoji salon sa takvim tipom usluge.",
+            data = new List<Salon>()
+        });
+    }else{ return Ok(salons);}
+
+   
+}
+[HttpGet("search-by-price/{serviceType}")]
+public async Task<IActionResult> SearchByPrice(string serviceType, [FromQuery] decimal minPrice, [FromQuery] decimal maxPrice)
+{
+    var salons = await _salonRepository.SearchByPrice(serviceType, minPrice, maxPrice);
+    return Ok(salons);
+}
 }

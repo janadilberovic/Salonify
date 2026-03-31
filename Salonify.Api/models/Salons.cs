@@ -11,7 +11,7 @@ public class Salon
     // Referenca na User (Role = Salon)
     [BsonRepresentation(BsonType.ObjectId)]
     public string UserId { get; set; }
-
+    public string Name { get; set; } = string.Empty;
 
     // Opis salona
     public string Description { get; set; }
