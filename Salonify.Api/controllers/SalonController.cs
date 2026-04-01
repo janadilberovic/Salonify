@@ -263,10 +263,53 @@ public async Task<IActionResult> SearchByService(string serviceType)
 
    
 }
-[HttpGet("search-by-price/{serviceType}")]
-public async Task<IActionResult> SearchByPrice(string serviceType, [FromQuery] decimal minPrice, [FromQuery] decimal maxPrice)
+[HttpGet("search-by-price-service/{serviceType}")]
+public async Task<IActionResult> SearchByPriceService(string serviceType, [FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
 {
-    var salons = await _salonRepository.SearchByPrice(serviceType, minPrice, maxPrice);
-    return Ok(salons);
+    var results = await _salonRepository.SearchByPrice(serviceType, minPrice, maxPrice);
+        if (results == null || !results.Any())
+        {
+            return Ok(new
+            {
+                message = "Ne postoji salon sa takvim tipom usluge u zadatom cenovnom rangu.",
+                data = new List<SalonSearchResultDto>()
+            });
+        }
+    
+    return Ok(results);
+}
+[HttpGet("search-by-working-hours")]
+public async Task<IActionResult> SearchByWorkingHours([FromQuery] int day, [FromQuery] string startTime, [FromQuery] string endTime)
+{
+    var results = await _salonRepository.SearchByWorkingDays(day, startTime, endTime);
+    return Ok(results);
+}
+[HttpGet("open-now")]
+public async Task<IActionResult> OpenNow([FromQuery] string city)
+{
+    var results = await _salonRepository.OpenNow(city);
+    return Ok(results);
+}
+[HttpGet("search")]
+public async Task<IActionResult> Search(
+    [FromQuery] string? city,
+    [FromQuery] string? serviceType,
+    [FromQuery] decimal? minPrice,
+    [FromQuery] decimal? maxPrice,
+    [FromQuery] int? day,
+    [FromQuery] string? time)
+{
+    var results = await _salonRepository.SearchAsync(city, serviceType, minPrice, maxPrice, day, time);
+
+    if (results == null || !results.Any())
+    {
+        return Ok(new
+        {
+            message = "Ne postoji salon za zadate filtere.",
+            data = new List<SalonSearchResultDto>()
+        });
+    }
+
+    return Ok(results);
 }
 }

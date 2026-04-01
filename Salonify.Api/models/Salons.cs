@@ -18,7 +18,7 @@ public class Salon
     public string Address { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
-    public string WorkingHours { get; set; } = string.Empty;
+    public List<WorkingDays> WorkingDays { get; set; } = new();
 
     public string? ImageUrl { get; set; }
     // Lista usluga koje salon nudi
