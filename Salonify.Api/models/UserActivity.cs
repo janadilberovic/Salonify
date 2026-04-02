@@ -11,7 +11,7 @@ public class UserActivity
     public string UserId { get; set; }
 
     [BsonRepresentation(BsonType.ObjectId)]
-    public string? SalonUserId { get; set; }
+    public string? SalonId { get; set; }
 
     [BsonRepresentation(BsonType.String)]
     public ServiceType ServiceType { get; set; }
@@ -19,4 +19,6 @@ public class UserActivity
     public double Weight { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [BsonRepresentation(BsonType.String)]
+    public ActivityType ActivityType { get; set; }
 }

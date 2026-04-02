@@ -13,14 +13,19 @@ public class Appointment
 
     // Salon
     [BsonRepresentation(BsonType.ObjectId)]
-    public string SalonUserId { get; set; }
+    public string SalonId { get; set; }
+    [BsonRepresentation(BsonType.String)]
+    public ServiceType ServiceType { get; set; }
 
     // Datum i vreme termina
-    public DateTime Date { get; set; }
+    public DateTime AppointmentDate { get; set; }
+    public TimeSpan StartTime { get; set; }
+    public TimeSpan EndTime { get; set; }
+    public string? Note { get; set; }
 
     // Status termina
     [BsonRepresentation(BsonType.String)]
-    public AppointmentStatus Status { get; set; }
+    public AppointmentStatus Status { get; set; } = AppointmentStatus.Pending;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
