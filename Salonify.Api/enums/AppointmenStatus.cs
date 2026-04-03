@@ -1,7 +1,7 @@
 public enum AppointmentStatus
 {
     Pending,    //ceka se odg salona
-    Approved, 
-    Rejected,  
-    Cancelled    //otkazan od strane korisnika ili salona
+    Approved, //salon potvrdjuje
+    Rejected,  //salon odbija
+    Cancelled    //otkazan od strane korisnika
 }

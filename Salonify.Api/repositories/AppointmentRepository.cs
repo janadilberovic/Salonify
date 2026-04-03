@@ -70,9 +70,13 @@ public class AppointmentRepository
     //termini za odredjeni salon za datum koji su aktivni
     public async Task<List<Appointment>> GetSalonAppointmentsByDateAsync(string salonId, DateTime date)
     {
+        var startOfDay=date.Date;
+        var endOfDay=startOfDay.AddDays(1);
+
         return await _appointments.Find(a =>
             a.SalonId == salonId &&
-            a.AppointmentDate.Date == date.Date &&
+            a.AppointmentDate >= startOfDay &&
+            a.AppointmentDate < endOfDay &&
             a.Status != AppointmentStatus.Cancelled &&
             a.Status != AppointmentStatus.Rejected
         ).ToListAsync();
@@ -84,27 +88,10 @@ public class AppointmentRepository
         return await _appointments.Find(a =>
             a.SalonId == salonId &&
             a.AppointmentDate.Date == date.Date &&
-            a.Status == AppointmentStatus.Approved
+            a.Status != AppointmentStatus.Approved
         ).ToListAsync();
     }
-    //svi saloni koji imaju termine za odredjeni datum
-    public async Task<List<string>> GetSalonsWithAppointmentsByDateAsync(DateTime date, TimeSpan startTime, TimeSpan endTime)
-    {
-        var startofDay = date.Date;
-        var endOfDay = date.Date.AddDays(1).AddTicks(-1);
-        var filter = Builders<Appointment>.Filter.And(
-        Builders<Appointment>.Filter.Gte(a => a.AppointmentDate, startofDay),
-        Builders<Appointment>.Filter.Lt(a => a.AppointmentDate, endOfDay),
-        Builders<Appointment>.Filter.Ne(a => a.Status, AppointmentStatus.Cancelled),
-        Builders<Appointment>.Filter.Ne(a => a.Status, AppointmentStatus.Rejected),
-        Builders<Appointment>.Filter.Where(a =>
-            startTime < a.EndTime && endTime > a.StartTime
-        )
-    );
-
-        return await _appointments
-            .Distinct<string>("SalonId", filter)
-            .ToListAsync();
-    }
+     
+    
 
 }
