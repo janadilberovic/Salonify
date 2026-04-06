@@ -225,7 +225,8 @@ public class AppointmentController : ControllerBase
     }
     //vrati sve slobodne termine za neki salon za odredjeni datum
     [HttpGet("salon/{salonid}/get-available-appointments-by-date")]
-    public async Task<IActionResult> GetAvailableAppointmentsByDate(string salonid, DateTime date, SalonService service)
+    public async Task<IActionResult> GetAvailableAppointmentsByDate(string salonid, [FromQuery] DateTime date,
+    [FromQuery] string serviceT)
     {
         var salon = await _salonRepository.GetByIdAsync(salonid);
         if (salon == null)
@@ -233,6 +234,11 @@ public class AppointmentController : ControllerBase
             return NotFound(new { message = "Ne postoji salon sa ovim idjem." });
         }
 
+        if (!Enum.TryParse<ServiceType>(serviceT, true, out var parsedserviceType))
+        {
+            return BadRequest(new { message = "Neispravan tip usluge." });
+        }
+        var service = salon.Services.FirstOrDefault(s => s.ServiceType == parsedserviceType);
         var day = date.DayOfWeek;
         WorkingDays workingDay = salon.WorkingDays.FirstOrDefault(wd => wd.Day == day);
 
@@ -246,19 +252,16 @@ public class AppointmentController : ControllerBase
             return NotFound(new { message = "Salon ne radi tog dana" });
         }
 
-        List<Appointment> zauzetiTermini = await _appointmentRepository.GetSalonAppointmentsByDateAsync(salonid, date);
-        if (zauzetiTermini == null)
-        {
-            return BadRequest(new { message = "nisu pronadjeni termini nikakvi" });
-        }
-        TimeSpan startTime = workingDay.StartTime.Value;
-        TimeSpan endTime = workingDay.EndTime.Value;
-        TimeSpan duration = TimeSpan.FromMinutes(service.DurationMinutes);
+
 
         if (!workingDay.StartTime.HasValue || !workingDay.EndTime.HasValue)
         {
             return BadRequest(new { message = "Radno vreme za ovaj dan nije dobro definisano." });
         }
+        TimeSpan startTime = workingDay.StartTime.Value;
+        TimeSpan endTime = workingDay.EndTime.Value;
+        TimeSpan duration = TimeSpan.FromMinutes(service.DurationMinutes);
+
 
         //resenje da nadjem vremenski slot za termine, neka bude na pola h?
         var slotStep = TimeSpan.FromMinutes(30);
@@ -266,7 +269,7 @@ public class AppointmentController : ControllerBase
 
         TimeSpan currSlot = startTime;
 
-        while (currSlot.Add(slotStep) <= endTime)
+        while (currSlot.Add(duration) <= endTime)
         {
 
             TimeSpan slotEnd = currSlot.Add(duration);
@@ -283,6 +286,7 @@ public class AppointmentController : ControllerBase
                 };
                 availableSlots.Add(av);
             }
+            currSlot = currSlot.Add(slotStep);
         }
         return Ok(new
         {
@@ -296,8 +300,84 @@ public class AppointmentController : ControllerBase
 
 
     }
+    [Authorize(Roles = "Salon,Admin")]
+    [HttpGet("get-appointments-by-status")]
+    public async Task<IActionResult> GetAppointmentsByStatus([FromQuery] int statusId)
+    {
+        if (!Enum.IsDefined(typeof(AppointmentStatus), statusId))
+        {
+            return BadRequest(new { message = "Neispravan status." });
+        }
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
+
+        var status = (AppointmentStatus)statusId;
+        var appointments = await _appointmentRepository.GetAppointmentByStatus(userId, status);
+
+        return Ok(appointments);
+
+    }
+    [Authorize(Roles = "Salon,Admin")]
+    [HttpGet("get-ucpoming-appointmetns-salon")]
+    public async Task<IActionResult> GetUpcomingAppointmentsForSalon()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
+        var salon=await _salonRepository.GetByIdAsync(userId);
+        if (salon==null)
+        {
+            return BadRequest("ne postoji dati salon");
+        }
+        var salonID= salon.Id;
 
 
+        var appointemts= await _appointmentRepository.GetUpcomingAppointmentsForSalon(salonID);
+        return Ok(appointemts);
+    }
 
+    [Authorize(Roles = "User,Admin")]
+    [HttpGet("get-ucpoming-appointmetns-user")]
+    public async Task<IActionResult> GetUpcomingAppointmentsForUser()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
+        var appointemts= await _appointmentRepository.GetUpcomingAppointmentsForUser(userId);
+        return Ok(appointemts);
+    }
+
+     [Authorize(Roles = "Salon,Admin")]
+    [HttpGet("get-history-appointmetns-salon")]
+    public async Task<IActionResult> GetHistoryAppointmentsForSalon()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
+            var salon=await _salonRepository.GetByIdAsync(userId);
+        if (salon==null)
+        {
+            return BadRequest("ne postoji dati salon");
+        }
+        var salonID= salon.Id;
+        var appointemts= await _appointmentRepository.GetHistoryForSalon(salonID);
+        return Ok(appointemts);
+    }
+
+     [Authorize(Roles = "User,Admin")]
+    [HttpGet("get-history-appointmetns-user")]
+    public async Task<IActionResult> GetHistoryAppointmentsForUser()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
+        var appointemts= await _appointmentRepository.GetHistoryForUser(userId);
+        return Ok(appointemts);
+    }
 }

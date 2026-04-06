@@ -53,14 +53,39 @@ public class AppointmentRepository
 
     public async Task<bool> HasConflictAsync(string salonId, DateTime appointmentDate, TimeSpan startTime, TimeSpan endTime)
     {
-        return await _appointments.Find(a =>
-        a.SalonId == salonId &&
-        a.AppointmentDate.Date == appointmentDate.Date &&
-        a.Status != AppointmentStatus.Cancelled &&
-        a.Status != AppointmentStatus.Rejected &&
-        startTime < a.EndTime &&
-        endTime > a.StartTime
-    ).AnyAsync();
+        var dayStart = appointmentDate.Date;
+        var dayEnd = dayStart.AddDays(1);
+
+        var appointments = await _appointments.Find(a =>
+            a.AppointmentDate >= dayStart &&
+            a.AppointmentDate < dayEnd &&
+            a.Status != AppointmentStatus.Approved &&
+            a.Status != AppointmentStatus.Rejected
+        ).ToListAsync();
+
+        var salonAppointments = appointments
+            .Where(a => a.SalonId == salonId)
+            .ToList();
+
+        Console.WriteLine($"PROVERA ZA SLOT: {startTime} - {endTime}");
+        Console.WriteLine($"TERMINA ZA SALON: {salonAppointments.Count}");
+
+        foreach (var a in salonAppointments)
+        {
+            var cond1 = startTime < a.EndTime;
+            var cond2 = endTime > a.StartTime;
+            var conflict = cond1 && cond2;
+
+            Console.WriteLine($"POSTOJECI: {a.StartTime} - {a.EndTime}");
+            Console.WriteLine($"startTime < a.EndTime = {cond1}");
+            Console.WriteLine($"endTime > a.StartTime = {cond2}");
+            Console.WriteLine($"KONFLIKT = {conflict}");
+        }
+
+        return salonAppointments.Any(a =>
+            startTime < a.EndTime &&
+            endTime > a.StartTime
+        );
     }
     public async Task UpdateStatusAsync(string appointmentId, AppointmentStatus status)
     {
@@ -70,8 +95,8 @@ public class AppointmentRepository
     //termini za odredjeni salon za datum koji su aktivni
     public async Task<List<Appointment>> GetSalonAppointmentsByDateAsync(string salonId, DateTime date)
     {
-        var startOfDay=date.Date;
-        var endOfDay=startOfDay.AddDays(1);
+        var startOfDay = date.Date;
+        var endOfDay = startOfDay.AddDays(1);
 
         return await _appointments.Find(a =>
             a.SalonId == salonId &&
@@ -91,7 +116,31 @@ public class AppointmentRepository
             a.Status != AppointmentStatus.Approved
         ).ToListAsync();
     }
-     
-    
 
+    public async Task<List<Appointment>> GetAppointmentByStatus(string salonId,AppointmentStatus status)
+    {
+        return await _appointments.Find(a=> a.SalonId==salonId &&
+                              a.Status==status ).ToListAsync();
+    }
+    public async Task<List<Appointment>> GetUpcomingAppointmentsForSalon(string salonid)
+    {
+        var today=DateTime.UtcNow.Date;
+        return await _appointments.Find(a=> a.SalonId==salonid && a.AppointmentDate>=today).ToListAsync();
+    }
+    public async Task<List<Appointment>> GetUpcomingAppointmentsForUser(string userId)
+    {
+        var today=DateTime.UtcNow.Date;
+        return await _appointments.Find(a=> a.UserId==userId && a.AppointmentDate>=today).ToListAsync();
+    }
+    //history 
+     public async Task<List<Appointment>> GetHistoryForSalon(string salonid)
+    {
+        var today=DateTime.UtcNow.Date;
+        return await _appointments.Find(a=> a.SalonId==salonid && a.AppointmentDate<=today).ToListAsync();
+    }
+    public async Task<List<Appointment>> GetHistoryForUser(string userId)
+    {
+        var today=DateTime.UtcNow.Date;
+        return await _appointments.Find(a=> a.UserId==userId && a.AppointmentDate<=today).ToListAsync();
+    }
 }
