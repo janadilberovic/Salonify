@@ -13,7 +13,9 @@ public class Review
 
     // Salon koji se ocenjuje (User sa Role = Salon)
     [BsonRepresentation(BsonType.ObjectId)]
-    public string SalonUserId { get; set; }
+    public string SalonId { get; set; }
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string AppointmentId { get; set; }
 
     // Ocena (1–5)
     public int Rating { get; set; }
@@ -21,8 +23,7 @@ public class Review
     // Tekstualni komentar
     public string Comment { get; set; }
 
-    // Opciono – slika koju korisnik dodaje uz recenziju
-    public string? ImageUrl { get; set; }
+
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

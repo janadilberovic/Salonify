@@ -327,15 +327,15 @@ public class AppointmentController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
-        var salon=await _salonRepository.GetByIdAsync(userId);
-        if (salon==null)
+        var salon = await _salonRepository.GetByIdAsync(userId);
+        if (salon == null)
         {
             return BadRequest("ne postoji dati salon");
         }
-        var salonID= salon.Id;
+        var salonID = salon.Id;
 
 
-        var appointemts= await _appointmentRepository.GetUpcomingAppointmentsForSalon(salonID);
+        var appointemts = await _appointmentRepository.GetUpcomingAppointmentsForSalon(salonID);
         return Ok(appointemts);
     }
 
@@ -347,11 +347,11 @@ public class AppointmentController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
-        var appointemts= await _appointmentRepository.GetUpcomingAppointmentsForUser(userId);
+        var appointemts = await _appointmentRepository.GetUpcomingAppointmentsForUser(userId);
         return Ok(appointemts);
     }
 
-     [Authorize(Roles = "Salon,Admin")]
+    [Authorize(Roles = "Salon,Admin")]
     [HttpGet("get-history-appointmetns-salon")]
     public async Task<IActionResult> GetHistoryAppointmentsForSalon()
     {
@@ -359,17 +359,17 @@ public class AppointmentController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
-            var salon=await _salonRepository.GetByIdAsync(userId);
-        if (salon==null)
+        var salon = await _salonRepository.GetByIdAsync(userId);
+        if (salon == null)
         {
             return BadRequest("ne postoji dati salon");
         }
-        var salonID= salon.Id;
-        var appointemts= await _appointmentRepository.GetHistoryForSalon(salonID);
+        var salonID = salon.Id;
+        var appointemts = await _appointmentRepository.GetHistoryForSalon(salonID);
         return Ok(appointemts);
     }
 
-     [Authorize(Roles = "User,Admin")]
+    [Authorize(Roles = "User,Admin")]
     [HttpGet("get-history-appointmetns-user")]
     public async Task<IActionResult> GetHistoryAppointmentsForUser()
     {
@@ -377,7 +377,7 @@ public class AppointmentController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
-        var appointemts= await _appointmentRepository.GetHistoryForUser(userId);
+        var appointemts = await _appointmentRepository.GetHistoryForUser(userId);
         return Ok(appointemts);
     }
 }

@@ -72,6 +72,7 @@ builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SalonRepository>();
 builder.Services.AddScoped<AppointmentRepository>();
+builder.Services.AddScoped<ReviewRepository>();
 
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddControllers();
