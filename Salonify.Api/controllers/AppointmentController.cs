@@ -151,6 +151,33 @@ public class AppointmentController : ControllerBase
         return Ok(new { message = "Termin je prihvacen", data = appointmentnew });
     }
     [Authorize(Roles = "Salon,Admin")]
+    [HttpPut("accept-appointment/{appointmentId}")]
+    public async Task<IActionResult> CompletedAppointment(string appointmentId)
+    {
+        var salonId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(salonId))
+            return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
+
+
+        AppointmentStatus status = AppointmentStatus.Completed;
+
+        var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
+        if (appointment.Status == AppointmentStatus.Cancelled || appointment.Status == AppointmentStatus.Rejected)
+            return BadRequest(new { message = "Otkazanom/Odbijenom terminu nije moguće menjati status." });
+
+
+        if (appointment == null)
+        {
+            return NotFound(new { message = "Termin nije pronadjen." });
+
+        }
+        await _appointmentRepository.UpdateStatusAsync(appointmentId, status);
+
+        var appointmentnew = await _appointmentRepository.GetByIdAsync(appointmentId);
+        return Ok(new { message = "Termin je prihvacen", data = appointmentnew });
+    }
+    [Authorize(Roles = "Salon,Admin")]
     [HttpPut("reject-appointment/{appointmentId}")]
     public async Task<IActionResult> RejectAppointment(string appointmentId)
     {

@@ -143,4 +143,13 @@ public class AppointmentRepository
         var today=DateTime.UtcNow.Date;
         return await _appointments.Find(a=> a.UserId==userId && a.AppointmentDate<=today).ToListAsync();
     }
+    //zavrsenu uslugu 
+    public async Task<Appointment?> GetCompletedAppointmentForUserAndSalon(string userId,string salonID)
+    {
+        return await _appointments.Find( a=>
+                                        a.UserId==userId &&
+                                        a.SalonId==salonID &&
+                                        a.Status==AppointmentStatus.Completed)
+                                        .FirstOrDefaultAsync();
+    }
 }
