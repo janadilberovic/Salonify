@@ -46,3 +46,8 @@ export async function updateSalonWorkingDays(data: WorkingDayApi[]) {
     }),
   });
 }
+export async function getSalonIdByUser(userId: string) {
+  return apiFetch<{ salonId: string }>(
+    `/api/salon/get-salon-id-by-user?userId=${userId}`
+  );
+}

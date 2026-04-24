@@ -158,7 +158,7 @@ export default function EditServiceModal({
 
               <div className="mt-2 relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">
-                  RSD
+                  €
                 </span>
 
                 <input

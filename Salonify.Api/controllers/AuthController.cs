@@ -43,7 +43,8 @@ public class AuthController : ControllerBase
         {
             Token = token,
             Role = user.Role.ToString(),
-            DisplayName = user.DisplayName
+            DisplayName = user.DisplayName,
+            Id=user.Id,
         };
 
         return Ok(response);

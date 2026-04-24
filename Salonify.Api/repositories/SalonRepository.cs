@@ -118,7 +118,7 @@ public class SalonRepository
 
     public async Task<Salon?> GetByIdAsync(string salonId)
     {
-        return await _salons.Find(s => s.UserId == salonId).FirstOrDefaultAsync();
+        return await _salons.Find(s => s.Id == salonId).FirstOrDefaultAsync();
     }
 
     public async Task DeleteAsync(string salonId)

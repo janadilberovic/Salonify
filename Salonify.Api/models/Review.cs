@@ -21,6 +21,7 @@ public class Review
 
     // Tekstualni komentar
     public string Comment { get; set; }
+    public ServiceType ServiceType{get; set;}
 
 
 

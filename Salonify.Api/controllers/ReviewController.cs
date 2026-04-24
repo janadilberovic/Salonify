@@ -62,6 +62,7 @@ public class ReviewController : ControllerBase
             SalonId = reviewDto.SalonId,
             Comment = reviewDto.Comment,
             CreatedAt = DateTime.UtcNow,
+            ServiceType=reviewDto.ServiceType,
             Rating = reviewDto.Rating
         };
         await _reviewRepository.CreateReview(review);
@@ -79,21 +80,18 @@ public class ReviewController : ControllerBase
         await _reviewRepository.DeleteReviewAsync(reviewId);
         return NoContent();
     }
-    [Authorize(Roles = "User,Admin,Salon")]
+   
     [HttpGet("get-reviews-for-salon")]
-    public async Task<IActionResult> GetReviewsForSalon()
+    public async Task<IActionResult> GetReviewsForSalon([FromQuery]string salonId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrWhiteSpace(userId))
-            return Unauthorized(new { error = "Nedostaje userId u tokenu." });
-        var salon= await _salonRepository.GetByIdAsync(userId);
+       
+        var salon= await _salonRepository.GetByIdAsync(salonId);
         if (salon == null)
         {
             return NotFound("salon ne postoji");
         }
 
-        var reviews = await _reviewRepository.GetReviewsBySalon(salon.Id);
+        var reviews = await _reviewRepository.GetReviewsBySalon(salonId);
         return Ok(reviews);
     }
     [Authorize(Roles = "User,Admin,Salon")]

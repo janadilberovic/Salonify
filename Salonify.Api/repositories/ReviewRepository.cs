@@ -5,10 +5,12 @@ namespace Salonify.Api.Repositories;
 public class ReviewRepository
 {
     private readonly IMongoCollection<Review> _reviews;
+     private readonly IMongoCollection<User> _users;
 
     public ReviewRepository(MongoDbContext context)
     {
         _reviews = context.Reviews;
+        _users=context.Users;
     }
 
     //CRUD
@@ -43,9 +45,28 @@ public class ReviewRepository
         return await _reviews.Find(a => a.UserId == userId).SortByDescending(r=>r.CreatedAt).ToListAsync();
     }
     //get reviews by salon
-    public async Task<List<Review>> GetReviewsBySalon(string salonId)
+    public async Task<List<ReviewResponseDTO>> GetReviewsBySalon(string salonId)
     {
-        return await _reviews.Find(a => a.SalonId == salonId).SortByDescending(r=>r.CreatedAt).ToListAsync();
+        var reviews= await _reviews.Find(a => a.SalonId == salonId).SortByDescending(r=>r.CreatedAt).ToListAsync();
+        var result= new List<ReviewResponseDTO>();
+
+        foreach (var review in reviews)
+    {
+        var user = await _users.Find(u => u.Id == review.UserId).FirstOrDefaultAsync();
+
+        result.Add(new ReviewResponseDTO
+        {
+            Id = review.Id,
+            Rating = review.Rating,
+            Comment = review.Comment,
+            CreatedAt = review.CreatedAt,
+            UserName = user != null ? user.DisplayName  : "Korisnik",
+            ServiceName = review.ServiceType.ToString()
+            
+        });
+    }
+
+    return result;
     }
 
     public async Task<Review?> GetByUserAndSalon(string userID, string salonID)

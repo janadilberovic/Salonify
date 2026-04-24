@@ -12,6 +12,7 @@ type LoginResponse = {
   token: string;
   role: string;
   displayName: string;
+  userId:string;
 };
 
 export default function LoginPage() {
@@ -41,6 +42,8 @@ export default function LoginPage() {
       localStorage.setItem("token", response.token);
       localStorage.setItem("role", response.role);
       localStorage.setItem("displayName", response.displayName);
+      localStorage.setItem("id", response.userId);
+  
       document.cookie = `token=${response.token}; path=/`;
       document.cookie = `role=${response.role}; path=/`;
 

@@ -33,6 +33,17 @@ public class SalonController : ControllerBase
         return Ok(salon);
     }
     [Authorize(Roles = "Salon")]
+    [HttpGet("get-salon-id-by-user")]
+    public async Task<IActionResult> GetSalonIdByUser([FromQuery] string userId)
+    {
+        var salon = await _salonRepository.GetByUserIdAsync(userId);
+
+        if (salon == null)
+            return NotFound(new { message = "Salon nije pronađen." });
+
+        return Ok(new { salonId = salon.Id });
+    }
+    [Authorize(Roles = "Salon")]
     [HttpPut("update-profile")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateSalonProfileRequest updateRequest)
     {
