@@ -30,7 +30,7 @@ public class ReviewController : ControllerBase
             return Unauthorized(new { error = "Nedostaje userId u tokenu." });
 
         var salonID = reviewDto.SalonId;
-        var salon = await _salonRepository.GetByIdAsync(salonID);
+        var salon = await _salonRepository.GetBySalonIdAsync(salonID);
         if (salon == null)
         {
             return BadRequest("ne postoji salon sa zadatim idjem");
@@ -51,6 +51,10 @@ public class ReviewController : ControllerBase
         if (completedAppointment == null)
         {
             return BadRequest("Možete ostaviti recenziju samo za salon u kome ste imali završen termin.");
+        }
+        if (!string.IsNullOrWhiteSpace(reviewDto.Comment) && reviewDto.Comment.Length > 500)
+        {
+            return BadRequest("Komentar ne sme biti duži od 500 karaktera.");
         }
         Review review = new Review
         {
@@ -83,7 +87,13 @@ public class ReviewController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized(new { error = "Nedostaje userId u tokenu." });
-        var reviews = await _reviewRepository.GetReviewsBySalon(userId);
+        var salon= await _salonRepository.GetByIdAsync(userId);
+        if (salon == null)
+        {
+            return NotFound("salon ne postoji");
+        }
+
+        var reviews = await _reviewRepository.GetReviewsBySalon(salon.Id);
         return Ok(reviews);
     }
     [Authorize(Roles = "User,Admin,Salon")]

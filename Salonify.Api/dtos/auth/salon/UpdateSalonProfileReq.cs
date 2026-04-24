@@ -5,5 +5,5 @@ public class UpdateSalonProfileRequest
     public string Address { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
-    public List<WorkingDays> WorkingDays { get; set; } = new();
+
 }

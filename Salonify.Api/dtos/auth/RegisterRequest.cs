@@ -7,6 +7,7 @@ public class RegisterRequest
 
     // Ime i prezime korisnika ili naziv salona
     public string DisplayName { get; set; }
+    public string Phone { get; set; } = string.Empty;
 
     // Samo za salon
     public string? SalonDescription { get; set; }

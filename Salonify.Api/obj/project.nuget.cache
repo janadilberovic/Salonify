@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "E1ymcbQcoEk=",
+  "dgSpecHash": "U7I29Wo/BZk=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Jana\\Desktop\\faks\\diplomski\\salonify.api\\Salonify.Api.csproj",
+  "projectFilePath": "C:\\Users\\Jana\\Desktop\\faks\\diplomski\\Salonify.Api\\Salonify.Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Jana\\.nuget\\packages\\dnsclient\\1.6.1\\dnsclient.1.6.1.nupkg.sha512",
     "C:\\Users\\Jana\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\8.0.2\\microsoft.aspnetcore.authentication.jwtbearer.8.0.2.nupkg.sha512",

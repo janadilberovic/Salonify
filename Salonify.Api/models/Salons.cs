@@ -23,5 +23,6 @@ public class Salon
     public string? ImageUrl { get; set; }
     // Lista usluga koje salon nudi
     public List<SalonService> Services { get; set; } = new();
+    public List<string> GalleryImageUrls { get; set; } = new();
 
 }

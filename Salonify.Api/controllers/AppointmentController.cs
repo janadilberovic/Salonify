@@ -12,10 +12,12 @@ public class AppointmentController : ControllerBase
 {
     private readonly AppointmentRepository _appointmentRepository;
     private readonly SalonRepository _salonRepository;
-    public AppointmentController(AppointmentRepository ar, SalonRepository sr)
+    private readonly UserRepository _userRepository;
+    public AppointmentController(AppointmentRepository ar, SalonRepository sr, UserRepository ur)
     {
         _appointmentRepository = ar;
         _salonRepository = sr;
+        _userRepository = ur;
     }
 
     [HttpGet("get/{id}")]
@@ -30,57 +32,76 @@ public class AppointmentController : ControllerBase
         return Ok(appointment);
 
     }
+[Authorize(Roles = "Salon,User,Admin")]
+[HttpPut("create-appointment")]
+public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentDTO appointmentDTO)
+{
+    if (appointmentDTO == null)
+        return BadRequest(new { message = "Podaci nisu validni." });
 
-    [Authorize(Roles = "Salon,User,Admin")]
-    [HttpPut("create-appointment")]
-    public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentDTO appointmentDTO)
+    if (appointmentDTO.AppointmentDate.Date < DateTime.UtcNow.Date)
+        return BadRequest(new { message = "Ne možete zakazati termin u prošlosti." });
+
+    if (!TimeSpan.TryParse(appointmentDTO.StartTime, out var startTime))
+        return BadRequest(new { message = "Neispravan format vremena. Koristi npr. 09:00:00." });
+
+    if (appointmentDTO.DurationMinutes <= 0)
+        return BadRequest(new { message = "Trajanje termina mora biti veće od 0." });
+
+    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    if (string.IsNullOrWhiteSpace(userId))
+        return Unauthorized(new { message = "Nedostaje UserId u tokenu." });
+
+    var salon = await _salonRepository.GetBySalonIdAsync(appointmentDTO.SalonId);
+
+    if (salon == null)
+        return NotFound(new { message = "Salon nije pronađen." });
+
+    if (salon.Services == null || !salon.Services.Any())
+        return BadRequest(new { message = "Salon nema dodate usluge." });
+
+    var service = salon.Services
+        .FirstOrDefault(x => x.ServiceType == appointmentDTO.ServiceType);
+
+    if (service == null)
+        return BadRequest(new { message = "Usluga ne postoji u ovom salonu." });
+
+    TimeSpan duration = TimeSpan.FromMinutes((double)appointmentDTO.DurationMinutes);
+    TimeSpan endTime = startTime.Add(duration);
+
+    var hasConflict = await _appointmentRepository.HasConflictAsync(
+        appointmentDTO.SalonId,
+        appointmentDTO.AppointmentDate.Date,
+        startTime,
+        endTime
+    );
+
+    if (hasConflict)
+        return BadRequest(new { message = "Termin je zauzet." });
+
+    var appointment = new Appointment
     {
-        if (appointmentDTO == null)
-        {
-            return BadRequest(new { message = "Podaci nisu validni." });
-        }
-        //validacije
-        if (appointmentDTO.AppointmentDate < DateTime.UtcNow.Date)
-        {
-            return BadRequest(new { message = "Ne mozete zakazati termin u proslosti." });
+        UserId = userId,
+        SalonId = appointmentDTO.SalonId,
+        ServiceType = appointmentDTO.ServiceType,
+        Price = service.Price,
+        AppointmentDate = appointmentDTO.AppointmentDate.Date,
+        StartTime = startTime,
+        EndTime = endTime,
+        Note = appointmentDTO.Note,
+        Status = AppointmentStatus.Pending,
+        CreatedAt = DateTime.UtcNow
+    };
 
-        }
-        //da pretvorim ovo 
-        if (!TimeSpan.TryParse(appointmentDTO.StartTime, out var startTime))
-        {
-            return BadRequest(new { message = "Neispravan format vremena." });
-        }
-        //konflikt 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        TimeSpan duration = TimeSpan.FromMinutes((double)appointmentDTO.DurationMinutes);
-        TimeSpan endTime = startTime.Add(duration);
-        var hasConflict = await _appointmentRepository.HasConflictAsync(appointmentDTO.SalonId, appointmentDTO.AppointmentDate, startTime, endTime);
-        if (hasConflict)
-        {
-            return BadRequest(new { message = "Termin je zauzet." });
-        }
-        //mapiram
-        var appointment = new Appointment
-        {
+    await _appointmentRepository.CreateAsync(appointment);
 
-            UserId = userId,
-            SalonId = appointmentDTO.SalonId,
-            ServiceType = appointmentDTO.ServiceType,
-            AppointmentDate = appointmentDTO.AppointmentDate,
-            StartTime = startTime,
-            EndTime = endTime,
-            Note = appointmentDTO.Note,
-            Status = AppointmentStatus.Pending,
-            CreatedAt = DateTime.UtcNow
-        };
-        await _appointmentRepository.CreateAsync(appointment);
-
-        return Ok(new
-        {
-            message = "Termin uspesno kreiran",
-            data = appointment
-        });
-    }
+    return Ok(new
+    {
+        message = "Termin uspešno kreiran.",
+        data = appointment
+    });
+}
 
     [Authorize(Roles = "User,Admin")]
     [HttpGet("appointments-user")]
@@ -106,101 +127,181 @@ public class AppointmentController : ControllerBase
     [HttpGet("get-appointments-for-salon")]
     public async Task<IActionResult> GetAppointmentsForSalon()
     {
-        var salonId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrWhiteSpace(salonId))
-            return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
 
-        var appointments = await _appointmentRepository.GetBySalonIdAsync(salonId);
+        var salon = await _salonRepository.GetByUserIdAsync(userId);
 
-        if (appointments == null)
+        if (salon == null)
+            return NotFound();
+
+        var appointments =
+            await _appointmentRepository.GetBySalonIdAsync(salon.Id);
+        await AutoCompletePastAppointments(appointments);
+        var result = new List<AppointmentResponseDTO>();
+
+        foreach (var item in appointments)
         {
+            var user = await _userRepository.GetByIdAsync(item.UserId);
 
-            return NotFound(new { message = "Nema pronadjenih termina za salon" });
-
+            result.Add(new AppointmentResponseDTO
+            {
+                Id = item.Id,
+                UserId = item.UserId,
+                CustomerName = user?.DisplayName ?? "Nepoznat korisnik",
+                CustomerEmail = user?.Email ?? "",
+                CustomerPhone = user?.Phone ?? "",
+                SalonId = item.SalonId,
+                ServiceType = item.ServiceType,
+                Price = item.Price,
+                AppointmentDate = item.AppointmentDate,
+                StartTime = item.StartTime,
+                EndTime = item.EndTime,
+                Note = item.Note,
+                Status = item.Status
+            });
         }
-        return Ok(appointments);
+
+        return Ok(result);
 
     }
-    //manipulisanje rezervacijama sa profilom salona
+    // MANIPULISANJE TERMINIMA SA PROFILA SALONA
+
     [Authorize(Roles = "Salon,Admin")]
     [HttpPut("accept-appointment/{appointmentId}")]
     public async Task<IActionResult> AcceptAppointment(string appointmentId)
     {
-        var salonId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrWhiteSpace(salonId))
+        if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
 
+        var salon = await _salonRepository.GetByUserIdAsync(userId);
 
-        AppointmentStatus status = AppointmentStatus.Approved;
+        if (salon == null)
+            return NotFound(new { message = "Salon nije pronađen." });
 
         var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
-        if (appointment.Status == AppointmentStatus.Cancelled || appointment.Status == AppointmentStatus.Rejected)
-            return BadRequest(new { message = "Otkazanom/Odbijenom terminu nije moguće menjati status." });
-
 
         if (appointment == null)
+            return NotFound(new { message = "Termin nije pronađen." });
+
+        if (appointment.SalonId != salon.Id)
+            return Forbid();
+
+        if (appointment.Status == AppointmentStatus.Cancelled ||
+            appointment.Status == AppointmentStatus.Rejected)
         {
-            return NotFound(new { message = "Termin nije pronadjen." });
-
+            return BadRequest(new
+            {
+                message = "Otkazanom/Odbijenom terminu nije moguće menjati status."
+            });
         }
-        await _appointmentRepository.UpdateStatusAsync(appointmentId, status);
 
-        var appointmentnew = await _appointmentRepository.GetByIdAsync(appointmentId);
-        return Ok(new { message = "Termin je prihvacen", data = appointmentnew });
+        await _appointmentRepository.UpdateStatusAsync(
+            appointmentId,
+            AppointmentStatus.Approved
+        );
+
+        var updated = await _appointmentRepository.GetByIdAsync(appointmentId);
+
+        return Ok(new
+        {
+            message = "Termin je prihvaćen.",
+            data = updated
+        });
     }
+
+
+
     [Authorize(Roles = "Salon,Admin")]
-    [HttpPut("accept-appointment/{appointmentId}")]
+    [HttpPut("completed-appointment/{appointmentId}")]
     public async Task<IActionResult> CompletedAppointment(string appointmentId)
     {
-        var salonId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrWhiteSpace(salonId))
+        if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
 
+        var salon = await _salonRepository.GetByUserIdAsync(userId);
 
-        AppointmentStatus status = AppointmentStatus.Completed;
+        if (salon == null)
+            return NotFound(new { message = "Salon nije pronađen." });
 
         var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
-        if (appointment.Status == AppointmentStatus.Cancelled || appointment.Status == AppointmentStatus.Rejected)
-            return BadRequest(new { message = "Otkazanom/Odbijenom terminu nije moguće menjati status." });
-
 
         if (appointment == null)
+            return NotFound(new { message = "Termin nije pronađen." });
+
+        if (appointment.SalonId != salon.Id)
+            return Forbid();
+
+        if (appointment.Status != AppointmentStatus.Approved)
         {
-            return NotFound(new { message = "Termin nije pronadjen." });
-
+            return BadRequest(new
+            {
+                message = "Samo odobren termin može biti završen."
+            });
         }
-        await _appointmentRepository.UpdateStatusAsync(appointmentId, status);
 
-        var appointmentnew = await _appointmentRepository.GetByIdAsync(appointmentId);
-        return Ok(new { message = "Termin je prihvacen", data = appointmentnew });
+        await _appointmentRepository.UpdateStatusAsync(
+            appointmentId,
+            AppointmentStatus.Completed
+        );
+
+        var updated = await _appointmentRepository.GetByIdAsync(appointmentId);
+
+        return Ok(new
+        {
+            message = "Termin je završen.",
+            data = updated
+        });
     }
+
+
+
     [Authorize(Roles = "Salon,Admin")]
     [HttpPut("reject-appointment/{appointmentId}")]
     public async Task<IActionResult> RejectAppointment(string appointmentId)
     {
-        var salonId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrWhiteSpace(salonId))
+        if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
 
-        AppointmentStatus status = AppointmentStatus.Rejected;
+        var salon = await _salonRepository.GetByUserIdAsync(userId);
+
+        if (salon == null)
+            return NotFound(new { message = "Salon nije pronađen." });
 
         var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
 
         if (appointment == null)
-        {
-            return NotFound(new { message = "Termin nije pronadjen." });
+            return NotFound(new { message = "Termin nije pronađen." });
 
-        }
+        if (appointment.SalonId != salon.Id)
+            return Forbid();
+
         if (appointment.Status == AppointmentStatus.Rejected)
             return BadRequest(new { message = "Termin je već odbijen." });
-        await _appointmentRepository.UpdateStatusAsync(appointmentId, status);
 
-        var appointmentnew = await _appointmentRepository.GetByIdAsync(appointmentId);
-        return Ok(new { message = "Termin je odbijen", data = appointmentnew });
+        if (appointment.Status == AppointmentStatus.Completed)
+            return BadRequest(new { message = "Završen termin nije moguće odbiti." });
+
+        await _appointmentRepository.UpdateStatusAsync(
+            appointmentId,
+            AppointmentStatus.Rejected
+        );
+
+        var updated = await _appointmentRepository.GetByIdAsync(appointmentId);
+
+        return Ok(new
+        {
+            message = "Termin je odbijen.",
+            data = updated
+        });
     }
     //cancelled ide od korisnika
     [Authorize(Roles = "User,Admin")]
@@ -406,5 +507,25 @@ public class AppointmentController : ControllerBase
             return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
         var appointemts = await _appointmentRepository.GetHistoryForUser(userId);
         return Ok(appointemts);
+    }
+    private async Task AutoCompletePastAppointments(List<Appointment> appointments)
+    {
+        var now = DateTime.Now;
+
+        foreach (var appointment in appointments)
+        {
+            var appointmentEnd = appointment.AppointmentDate.Date + appointment.EndTime;
+
+            if (appointment.Status == AppointmentStatus.Approved &&
+                appointmentEnd < now)
+            {
+                await _appointmentRepository.UpdateStatusAsync(
+                    appointment.Id,
+                    AppointmentStatus.Completed
+                );
+
+                appointment.Status = AppointmentStatus.Completed;
+            }
+        }
     }
 }

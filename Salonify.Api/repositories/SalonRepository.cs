@@ -39,6 +39,11 @@ public class SalonRepository
             }).ToList()
         };
     }
+    public async Task<Salon?> GetBySalonIdAsync(string salonId)
+    {
+                return await _salons.Find(s => s.Id == salonId).FirstOrDefaultAsync();
+
+    }
     public async Task<Salon?> GetByUserIdAsync(string userId)
     {
         return await _salons.Find(s => s.UserId == userId).FirstOrDefaultAsync();
@@ -51,12 +56,17 @@ public class SalonRepository
             .Set(s => s.Description, updateRequest.Description)
             .Set(s => s.Address, updateRequest.Address)
             .Set(s => s.City, updateRequest.City)
-            .Set(s => s.Phone, updateRequest.Phone)
-            .Set(s => s.WorkingDays, updateRequest.WorkingDays);
-
+            .Set(s => s.Phone, updateRequest.Phone);
+            
         await _salons.UpdateOneAsync(s => s.UserId == userId, update);
     }
+    public async Task UpdateSalonWorkingDays(string userId,UpdateSalonWorkingDaysDto dto)
+    {
+        var update=Builders<Salon>.Update.Set(s => s.WorkingDays, dto.WorkingDays);
+        
+        await _salons.UpdateOneAsync(s => s.UserId == userId, update);
 
+    }
     public async Task UpdateImageAsync(string userId, string imageUrl)
     {
         var update = Builders<Salon>.Update
@@ -458,6 +468,18 @@ public class SalonRepository
                 }).ToList()
         }).ToList();
     }
+    public async Task AddGalleryImageAsync(string salonId, string imageUrl)
+{
+    var update = Builders<Salon>.Update.Push(s => s.GalleryImageUrls, imageUrl);
+
+    await _salons.UpdateOneAsync(s => s.UserId == salonId, update);
+}
+public async Task RemoveGalleryImageAsync(string salonId, string imageUrl)
+{
+    var update = Builders<Salon>.Update.Pull(s => s.GalleryImageUrls, imageUrl);
+
+    await _salons.UpdateOneAsync(s => s.Id == salonId, update);
+}
 
     
 }

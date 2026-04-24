@@ -16,6 +16,7 @@ public class Appointment
     public string SalonId { get; set; }
     [BsonRepresentation(BsonType.String)]
     public ServiceType ServiceType { get; set; }
+     public decimal Price { get; set; } 
 
     // Datum i vreme termina
     public DateTime AppointmentDate { get; set; }
