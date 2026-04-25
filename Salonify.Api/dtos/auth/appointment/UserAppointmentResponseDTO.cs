@@ -5,6 +5,8 @@ public class UserAppointmentResponseDTO
     public string SalonName { get; set; }
     public string SalonImageUrl { get; set; }
     public ServiceType ServiceType { get; set; }
+        public string? ServiceImageUrl{get; set;}
+
     public decimal Price { get; set; }
     public DateTime AppointmentDate { get; set; }
     public TimeSpan StartTime { get; set; }

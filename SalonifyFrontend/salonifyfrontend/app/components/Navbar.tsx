@@ -5,34 +5,40 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LinkButton } from "./ui";
 import { BellIcon, FlowerIcon, MenuIcon, XIcon } from "./Icons";
+import { getUpcomingAppointmentsForUser } from "@/services/appointment";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-
+  const [upcomingCount, setUpcomingCount] = useState(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState<string | null>(null);
- const [name, setName] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
     setRole(localStorage.getItem("role"));
-      setName(localStorage.getItem("Name"));
+    setName(localStorage.getItem("Name"));
   }, []);
-
+  useEffect(() => {
+    getUpcomingAppointmentsForUser()
+      .then((data) => setUpcomingCount(data.length))
+      .catch(() => setUpcomingCount(0));
+  }, []);
   const isLoggedIn = !!role;
   const isSalon = role === "Salon";
   const isUser = role === "User";
   const isAdmin = role === "Admin";
 
- const NAV = [
-  { href: "/salons", label: "Saloni", show: true },
+  const NAV = [
+    { href: "/salons", label: "Saloni", show: true },
 
-  { href: "/appointments", label: "Moji termini", show: isUser },
+    { href: "/appointments", label: "Moji termini", show: isUser },
 
-  { href: "/dashboard", label: "Salon dashboard", show: isSalon || isAdmin },
+    { href: "/dashboard", label: "Salon dashboard", show: isSalon || isAdmin },
 
-  { href: "/reviews", label: "Recenzije", show: true },
-].filter((item) => item.show);
+    { href: "/reviews", label: "Recenzije", show: true },
+  ].filter((item) => item.show);
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -86,12 +92,37 @@ export default function Navbar() {
               <button
                 aria-label="Obaveštenja"
                 className="relative size-10 rounded-full bg-white border border-[var(--border)] hover:border-primary hover:text-primary grid place-items-center transition"
+                onClick={() => setNotificationsOpen((v) => !v)}
               >
                 <BellIcon width={18} height={18} />
-                <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-accent" />
+                {upcomingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-[11px] font-bold grid place-items-center">
+                    {upcomingCount}
+                  </span>
+                )}
               </button>
             )}
+            {notificationsOpen && (
+              <div className="absolute right-0 top-full translate-y-4 w-80 rounded-3xl bg-white border border-[var(--border)] shadow-lift p-5 z-50">
+                <p className="font-display text-lg font-semibold">Podsetnik</p>
 
+                <p className="mt-2 text-sm text-muted leading-relaxed">
+                  Imate{" "}
+                  <span className="font-semibold text-primary">
+                    {upcomingCount}
+                  </span>{" "}
+                  predstojećih termina.
+                </p>
+
+                <Link
+                  href="/appointments"
+                  onClick={() => setNotificationsOpen(false)}
+                  className="mt-4 inline-flex w-full justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-hover transition"
+                >
+                  Pogledaj termine
+                </Link>
+              </div>
+            )}
             {isLoggedIn ? (
               <>
                 <span className="text-sm font-medium text-foreground/80">

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Salonify.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8daa52c690c1c071f0915cc35d43c7635132e888")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0b307d2c1eec417c4ac241a5824acb177f3d36fc")]
 [assembly: System.Reflection.AssemblyProductAttribute("Salonify.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Salonify.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

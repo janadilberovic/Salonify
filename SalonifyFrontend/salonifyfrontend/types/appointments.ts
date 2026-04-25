@@ -27,6 +27,7 @@ export type UserAppointment = {
   salonName: string;
   salonImageUrl: string;
   serviceType: string;
+  serviceImageUrl?: string;
   price: number;
   appointmentDate: string;
   startTime: string;
@@ -34,4 +35,16 @@ export type UserAppointment = {
   note?: string;
   status: AppointmentStatus;
   slug:string;
+};
+export type AvailableSlot = {
+  startTime: string;
+  endTime: string;
+};
+export type CreateAppointmentPayload = {
+  salonId: string;
+  serviceType: number | string;
+  appointmentDate: string;
+  startTime: string;
+  durationMinutes: number;
+  note?: string;
 };

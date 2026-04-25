@@ -123,7 +123,9 @@ public class AppointmentController : ControllerBase
         foreach (var appointment in appointments)
         {
             var salon = await _salonRepository.GetBySalonIdAsync(appointment.SalonId);
-
+            var service = salon?.Services
+    .FirstOrDefault(s => s.ServiceType == appointment.ServiceType);
+            Console.WriteLine(service);
             result.Add(new UserAppointmentResponseDTO
             {
                 Id = appointment.Id,
@@ -131,6 +133,7 @@ public class AppointmentController : ControllerBase
                 SalonName = salon?.Name ?? "Nepoznat salon",
                 SalonImageUrl = salon?.ImageUrl ?? "",
                 ServiceType = appointment.ServiceType,
+                ServiceImageUrl=service.ImageUrl,
                 Price = appointment.Price,
                 AppointmentDate = appointment.AppointmentDate,
                 StartTime = appointment.StartTime,

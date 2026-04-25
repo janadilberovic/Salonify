@@ -89,7 +89,7 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
             <div className="absolute inset-x-0 top-0 p-5 flex items-start justify-between">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/90 backdrop-blur px-3 h-8 rounded-full shadow-softer">
                 <SparkleIcon width={14} height={14} className="text-primary" />
-                Verified salon
+                Verifikovan salon
               </span>
               <button className="size-10 rounded-full bg-white/90 backdrop-blur grid place-items-center hover:text-accent transition shadow-softer">
                 <HeartIcon width={18} height={18} />
@@ -127,8 +127,8 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
 
             <div className="mt-5 flex flex-wrap items-center gap-5 text-sm">
               <span className="inline-flex items-center gap-1.5">
-                <Rating value={salon.rating} size={16} showValue />
-                <span className="text-muted">({salon.reviewCount})</span>
+                <Rating value={averageRating} size={16} showValue />
+                <span className="text-muted">({reviews.length})</span>
               </span>
               <span className="inline-flex items-center gap-1.5 text-foreground/80">
                 <MapPinIcon width={15} height={15} className="text-primary" />
@@ -259,7 +259,7 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
           </div>
 
           <div className="lg:sticky lg:top-24">
-            <BookingPanel services={salon.services} />
+            <BookingPanel salonId={salon.id} services={salon.services} />
           </div>
         </div>
       </section>
@@ -268,10 +268,9 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
       <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-24">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
           <div>
-            <EyebrowLabel>Client stories</EyebrowLabel>
+            <EyebrowLabel>Iskustva klijenata</EyebrowLabel>
             <h2 className="font-display mt-3 text-3xl sm:text-4xl font-semibold tracking-tight">
-              What people are saying
-            </h2>
+Šta drugi kažu o nama            </h2>
           </div>
         </div>
         <ReviewBlock
@@ -312,6 +311,7 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
 import type { Salon } from "../../lib/data";
 import { getAverageReviewsForSalon, getReviewsForSalon } from "@/services/reviews";
 function RelatedCard({ salon }: { salon: Salon }) {
+
   return (
     <Link
       href={`/salons/${salon.slug}`}
@@ -356,7 +356,7 @@ function getSalonOpenStatus(
   if (!today || today.closed || today.hours === "Zatvoreno") {
     return {
       isOpen: false,
-      label: "Closed now",
+      label: "Sada zatvoreno",
     };
   }
 

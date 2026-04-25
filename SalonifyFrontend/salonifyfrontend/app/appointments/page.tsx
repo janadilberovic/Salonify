@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+
 import {
   StatusBadge,
   EyebrowLabel,
@@ -23,6 +24,7 @@ import {
 
 import { AppointmentStatus, UserAppointment } from "@/types/appointments";
 import { cancelAppointment, getUserAppointments } from "@/services/appointment";
+import { getImageUrl } from "../lib/imageUrl";
 
 const TABS: ("All" | AppointmentStatus)[] = [
   "All",
@@ -72,7 +74,9 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900&q=80";
 
-function normalizeStatus(status: AppointmentStatus | number): AppointmentStatus {
+function normalizeStatus(
+  status: AppointmentStatus | number,
+): AppointmentStatus {
   if (typeof status === "number") return STATUS_MAP[status] ?? "Pending";
   return status;
 }
@@ -259,10 +263,12 @@ function Stat({ n, l, tint }: { n: number; l: string; tint: string }) {
 
 function AppointmentRow({
   a,
+
   onCancel,
   isCanceling,
 }: {
   a: UserAppointment;
+
   onCancel: (id: string) => void;
   isCanceling: boolean;
 }) {
@@ -275,11 +281,12 @@ function AppointmentRow({
       <div className="grid md:grid-cols-[200px_1fr_auto] gap-0">
         <div className="relative aspect-[5/3] md:aspect-auto md:min-h-full">
           <Image
-            src={a.salonImageUrl || FALLBACK_IMAGE}
-            alt={a.salonName || "Salon"}
+             src={getImageUrl(a.serviceImageUrl)}
+           alt={a.serviceType || serviceLabel(a.serviceType)}
             fill
             sizes="(max-width: 768px) 100vw, 200px"
             className="object-cover"
+            unoptimized
           />
         </div>
 
@@ -383,9 +390,7 @@ function Empty() {
     <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-14 text-center">
       <Avatar name="✿" size={56} />
 
-      <h3 className="font-display mt-5 text-2xl font-semibold">
-        Nema termina
-      </h3>
+      <h3 className="font-display mt-5 text-2xl font-semibold">Nema termina</h3>
 
       <p className="mt-2 text-sm text-muted max-w-md mx-auto">
         Kada zakažeš termin, pojaviće se ovde. Spremna za sledeći beauty ritual?
