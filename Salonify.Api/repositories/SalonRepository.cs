@@ -480,7 +480,10 @@ public async Task RemoveGalleryImageAsync(string salonId, string imageUrl)
 
     await _salons.UpdateOneAsync(s => s.Id == salonId, update);
 }
-
+public async Task<Salon?> GetBySlugAsync(string slug)
+{
+    return await _salons.Find(s => s.Slug == slug).FirstOrDefaultAsync();
+}
     
 }
 

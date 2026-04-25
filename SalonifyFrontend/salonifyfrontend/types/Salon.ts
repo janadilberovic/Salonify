@@ -1,5 +1,6 @@
 export type SalonApi = {
   id: string;
+  slug:string;
   userId: string;
   name: string;
   description: string;

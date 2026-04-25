@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 export function mapSalonApiToUI(salon: SalonApi): Salon {
   return {
     id: salon.id,
-    slug: salon.id,
+    slug: salon.slug || salon.id,
     name: salon.name || "Moj salon",
     tagline: salon.description || "Salon lepote",
     description: salon.description || "",
@@ -33,8 +33,8 @@ export function mapSalonApiToUI(salon: SalonApi): Salon {
       price: s.price,
       duration: s.durationMinutes,
       durationMinutes: s.durationMinutes,
-      image: s.imageUrl || "/images/service-placeholder.jpg",
-      imageUrl: s.imageUrl || null,
+      image: getImageUrl(s.imageUrl),
+      imageUrl: getImageUrl(s.imageUrl) ,
       category: s.name,
       serviceType: s.serviceType,
     })),

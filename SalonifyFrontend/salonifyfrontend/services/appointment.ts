@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import { AppointmentApi } from "@/types/appointments";
+import { AppointmentApi,UserAppointment } from "@/types/appointments";
 
 export async function getAppointmentsForSalon() {
   return apiFetch<AppointmentApi[]>("/api/appointments/get-appointments-for-salon");
@@ -29,4 +29,13 @@ export async function completeAppointment(appointmentId: string) {
       method: "PUT",
     }
   );
+}
+export async function getUserAppointments() {
+  return apiFetch<UserAppointment[]>("/api/appointments/appointments-user");
+}
+
+export async function cancelAppointment(appointmentId: string) {
+  return apiFetch(`/api/appointments/cancelled-appointment/${appointmentId}`, {
+    method: "PUT",
+  });
 }

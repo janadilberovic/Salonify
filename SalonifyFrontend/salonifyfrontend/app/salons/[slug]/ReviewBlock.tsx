@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Rating, Avatar, Button, Textarea, Label } from "../../components/ui";
 import { StarIcon, StarOutlineIcon } from "../../components/Icons";
-import type { Review } from "../../lib/data";
+import type { Review } from "@/types/Review";
+import {
+  getAverageReviewsForSalon,
+  getReviewsForSalon,
+} from "@/services/reviews";
 
 export default function ReviewBlock({
   reviews,
@@ -18,6 +22,15 @@ export default function ReviewBlock({
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  useEffect(() => {
+  if (window.location.hash === "#reviews") {
+    setTimeout(() => {
+      document
+        .getElementById("reviews")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+  }
+}, []);
 
   const breakdown = [5, 4, 3, 2, 1].map((star) => {
     const n = reviews.filter((r) => Math.round(r.rating) === star).length;
@@ -26,7 +39,7 @@ export default function ReviewBlock({
   });
 
   return (
-    <div className="grid lg:grid-cols-[1fr_1.3fr] gap-8">
+   <section id="reviews" className="scroll-mt-32 grid lg:grid-cols-[1fr_1.3fr] gap-8">
       {/* Summary + write */}
       <div className="space-y-6">
         <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-7">
@@ -37,7 +50,7 @@ export default function ReviewBlock({
             <div className="pb-2">
               <Rating value={rating} size={18} />
               <p className="text-xs text-muted mt-1">
-                Based on {count} verified reviews
+                Bazirano na {count} recenzije
               </p>
             </div>
           </div>
@@ -58,19 +71,19 @@ export default function ReviewBlock({
         </div>
 
         <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-7">
-          <h4 className="font-display text-xl font-semibold">Leave a review</h4>
+          <h4 className="font-display text-xl font-semibold">Ostavite recenziju</h4>
           <p className="text-sm text-muted mt-1">
-            Share how your visit went — it helps other clients.
+            Podelite sa nama Vaše iskustvo - to pomaže drugim korisnicima.
           </p>
 
           {submitted ? (
             <div className="mt-5 p-4 rounded-2xl bg-success-soft text-[#2f6a51] text-sm">
-              Thanks for your review — it&rsquo;ll appear after a quick check.
+              Hvala na Vašoj recenziji — ona&rsquo;će se pojaviti nakon kratke provere.
             </div>
           ) : (
             <div className="mt-5 space-y-4">
               <div>
-                <Label>Your rating</Label>
+                <Label>Vaša ocena</Label>
                 <div className="flex items-center gap-1.5 text-[var(--gold)]">
                   {Array.from({ length: 5 }).map((_, i) => {
                     const v = i + 1;
@@ -100,12 +113,12 @@ export default function ReviewBlock({
               </div>
 
               <div>
-                <Label htmlFor="r">Your thoughts</Label>
+                <Label htmlFor="r">Vaš komentar</Label>
                 <Textarea
                   id="r"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Tell us about your experience…"
+                  placeholder="Recite nam nešto o Vašem iskustvu..."
                 />
               </div>
 
@@ -114,7 +127,7 @@ export default function ReviewBlock({
                 onClick={() => setSubmitted(true)}
                 disabled={!text.trim()}
               >
-                Submit review
+                Potvrdite recenziju
               </Button>
             </div>
           )}
@@ -135,23 +148,23 @@ export default function ReviewBlock({
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <Avatar name={r.author} size={44} />
+                <Avatar name={r.userName || "Korisnik"} size={44} />
                 <div>
-                  <p className="font-semibold">{r.author}</p>
+                  <p className="font-semibold">{r.userName || "Korisnik"}</p>
                   <p className="text-xs text-muted">
-                    {r.date}
-                    {r.service ? ` · ${r.service}` : ""}
+                    {new Date(r.createdAt).toLocaleDateString("sr-RS")}
+                    {r.serviceName ? ` · ${r.serviceName}` : ""}
                   </p>
                 </div>
               </div>
               <Rating value={r.rating} size={14} />
             </div>
             <p className="mt-4 text-[15px] text-foreground/85 leading-relaxed">
-              {r.body}
+              {r.comment}
             </p>
           </div>
-        ))}
+        ))}\
       </div>
-    </div>
+    </section>
   );
 }

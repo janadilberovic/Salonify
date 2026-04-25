@@ -447,4 +447,18 @@ public class SalonController : ControllerBase
 
         return $"/uploads/{folder}/{fileName}";
     }
+    [HttpGet("get-salon-by-slug-or-id/{value}")]
+    public async Task<IActionResult> GetBySlugOrId(string value)
+    {
+        var salon = await _salonRepository.GetBySlugAsync(value);
+
+        if (salon == null)
+            salon = await _salonRepository.GetByIdAsync(value);
+
+        if (salon == null)
+            return NotFound(new { message = "Salon nije pronađen." });
+
+        return Ok(salon);
+    }
+
 }

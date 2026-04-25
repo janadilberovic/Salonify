@@ -51,3 +51,7 @@ export async function getSalonIdByUser(userId: string) {
     `/api/salon/get-salon-id-by-user?userId=${userId}`
   );
 }
+export async function getSalonBySlugOrId(value: string) {
+  const data= await apiFetch<SalonApi>(`/api/salon/get-salon-by-slug-or-id/${value}`);
+  return mapSalonApiToUI(data);
+}

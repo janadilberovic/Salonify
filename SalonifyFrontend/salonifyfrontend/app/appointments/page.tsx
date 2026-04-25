@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import {
@@ -21,9 +20,9 @@ import {
   SparkleIcon,
   HeartIcon,
 } from "../components/Icons";
-import { USER_APPOINTMENTS, SALONS } from "../lib/data";
-import type { Appointment } from "../lib/data";
-import type { AppointmentStatus } from "../components/ui";
+
+import { AppointmentStatus, UserAppointment } from "@/types/appointments";
+import { cancelAppointment, getUserAppointments } from "@/services/appointment";
 
 const TABS: ("All" | AppointmentStatus)[] = [
   "All",
@@ -34,55 +33,171 @@ const TABS: ("All" | AppointmentStatus)[] = [
   "Rejected",
 ];
 
+const STATUS_MAP: Record<number, AppointmentStatus> = {
+  0: "Pending",
+  1: "Approved",
+  2: "Rejected",
+  3: "Cancelled",
+  4: "Completed",
+};
+
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  0: "Šišanje",
+  1: "Farbanje",
+  2: "Stilizovanje",
+  3: "Manikir",
+  4: "Pedikir",
+  5: "Šminkanje",
+  6: "Masaža",
+  7: "Tretman lica",
+  8: "Depilacija",
+  9: "Spa tretman",
+  10: "Nail art",
+  11: "Ostalo",
+
+  Haircut: "Šišanje",
+  Coloring: "Farbanje",
+  Styling: "Stilizovanje",
+  Manicure: "Manikir",
+  Pedicure: "Pedikir",
+  Makeup: "Šminkanje",
+  Massage: "Masaža",
+  Facial: "Tretman lica",
+  Waxing: "Depilacija",
+  SpaTreatment: "Spa tretman",
+  NailArt: "Nail art",
+  Other: "Ostalo",
+};
+
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900&q=80";
+
+function normalizeStatus(status: AppointmentStatus | number): AppointmentStatus {
+  if (typeof status === "number") return STATUS_MAP[status] ?? "Pending";
+  return status;
+}
+
+function serviceLabel(serviceType: string | number) {
+  return SERVICE_TYPE_LABELS[String(serviceType)] ?? String(serviceType);
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("sr-RS", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatTime(time: string) {
+  return time?.slice(0, 5);
+}
+
+function getDuration(startTime: string, endTime: string) {
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+
+  const start = sh * 60 + sm;
+  const end = eh * 60 + em;
+
+  return end - start;
+}
+
 export default function AppointmentsPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("All");
-  const [appts, setAppts] = useState<Appointment[]>(USER_APPOINTMENTS);
+  const [appts, setAppts] = useState<UserAppointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
 
-  const filtered = appts.filter((a) =>
-    tab === "All" ? true : a.status === tab,
-  );
+  useEffect(() => {
+    const loadAppointments = async () => {
+      try {
+        const data = await getUserAppointments();
 
-  const cancel = (id: string) =>
-    setAppts((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "Cancelled" } : a)),
-    );
+        const normalized = data.map((a) => ({
+          ...a,
+          status: normalizeStatus(a.status),
+        }));
+
+        setAppts(normalized);
+      } catch (error) {
+        console.error("Greška pri učitavanju termina:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAppointments();
+  }, []);
+
+  const filtered = useMemo(() => {
+    return appts.filter((a) => (tab === "All" ? true : a.status === tab));
+  }, [appts, tab]);
 
   const counts = {
-    upcoming: appts.filter((a) =>
-      ["Pending", "Approved"].includes(a.status),
-    ).length,
+    upcoming: appts.filter((a) => ["Pending", "Approved"].includes(a.status))
+      .length,
     completed: appts.filter((a) => a.status === "Completed").length,
     cancelled: appts.filter(
       (a) => a.status === "Cancelled" || a.status === "Rejected",
     ).length,
   };
 
+  const cancel = async (id: string) => {
+    try {
+      setCancelingId(id);
+
+      await cancelAppointment(id);
+
+      setAppts((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status: "Cancelled" } : a)),
+      );
+    } catch (error) {
+      console.error("Greška pri otkazivanju termina:", error);
+    } finally {
+      setCancelingId(null);
+    }
+  };
+
   return (
     <>
       <Navbar />
 
-      {/* HEADER */}
       <section className="mx-auto max-w-7xl px-6 lg:px-10 pt-10 lg:pt-14">
         <div className="grid lg:grid-cols-[1.3fr_1fr] gap-8 items-end">
           <div>
-            <EyebrowLabel>Your appointments</EyebrowLabel>
+            <EyebrowLabel>Moji termini</EyebrowLabel>
+
             <h1 className="font-display mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
-              Hello, Mila ✿
+              Tvoji beauty rituali ✿
             </h1>
+
             <p className="mt-3 text-muted max-w-xl">
-              Every ritual you&rsquo;ve booked, tidy and in order. Review past
-              visits, confirm upcoming ones or quickly rebook a favorite.
+              Ovde možeš da pratiš zakazane termine, vidiš istoriju poseta i
+              otkažeš termin ako se planovi promene.
             </p>
           </div>
+
           <div className="grid grid-cols-3 gap-3">
-            <Stat n={counts.upcoming} l="Upcoming" tint="bg-primary-soft text-[#5b3e8a]" />
-            <Stat n={counts.completed} l="Completed" tint="bg-info-soft text-[#3e4a72]" />
-            <Stat n={counts.cancelled} l="Cancelled" tint="bg-danger-soft text-[#8a3948]" />
+            <Stat
+              n={counts.upcoming}
+              l="Aktivni"
+              tint="bg-primary-soft text-[#5b3e8a]"
+            />
+            <Stat
+              n={counts.completed}
+              l="Završeni"
+              tint="bg-info-soft text-[#3e4a72]"
+            />
+            <Stat
+              n={counts.cancelled}
+              l="Otkazani"
+              tint="bg-danger-soft text-[#8a3948]"
+            />
           </div>
         </div>
       </section>
 
-      {/* TABS */}
       <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-10">
         <div className="flex items-center gap-2 overflow-x-auto pb-2">
           {TABS.map((t) => (
@@ -95,7 +210,8 @@ export default function AppointmentsPage() {
                   : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
               }`}
             >
-              {t}
+              {t === "All" ? "Svi" : t}
+
               <span className="ml-2 text-[11px] opacity-80">
                 {t === "All"
                   ? appts.length
@@ -105,50 +221,21 @@ export default function AppointmentsPage() {
           ))}
         </div>
 
-        {/* LIST */}
         <div className="mt-6 space-y-4">
-          {filtered.length === 0 && <Empty />}
-          {filtered.map((a) => (
-            <AppointmentRow key={a.id} a={a} onCancel={cancel} />
-          ))}
-        </div>
-      </section>
-
-      {/* REBOOK */}
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-20">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <EyebrowLabel>Rebook a favorite</EyebrowLabel>
-            <h2 className="font-display mt-3 text-3xl font-semibold">
-              Your go-to salons
-            </h2>
-          </div>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {SALONS.slice(0, 3).map((s) => (
-            <Link
-              key={s.id}
-              href={`/salons/${s.slug}`}
-              className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-5 flex items-center gap-4 hover-lift"
-            >
-              <div className="relative size-16 rounded-2xl overflow-hidden shrink-0">
-                <Image
-                  src={s.cover}
-                  alt={s.name}
-                  fill
-                  sizes="80px"
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{s.name}</p>
-                <p className="text-xs text-muted truncate">{s.city}</p>
-              </div>
-              <span className="size-8 rounded-full bg-primary-soft text-primary grid place-items-center">
-                <ArrowRightIcon width={14} height={14} />
-              </span>
-            </Link>
-          ))}
+          {loading ? (
+            <LoadingState />
+          ) : filtered.length === 0 ? (
+            <Empty />
+          ) : (
+            filtered.map((a) => (
+              <AppointmentRow
+                key={a.id}
+                a={a}
+                onCancel={cancel}
+                isCanceling={cancelingId === a.id}
+              />
+            ))
+          )}
         </div>
       </section>
 
@@ -173,90 +260,120 @@ function Stat({ n, l, tint }: { n: number; l: string; tint: string }) {
 function AppointmentRow({
   a,
   onCancel,
+  isCanceling,
 }: {
-  a: Appointment;
+  a: UserAppointment;
   onCancel: (id: string) => void;
+  isCanceling: boolean;
 }) {
   const cancellable = a.status === "Pending" || a.status === "Approved";
+
+  const duration = getDuration(a.startTime, a.endTime);
+
   return (
     <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer overflow-hidden hover-lift">
       <div className="grid md:grid-cols-[200px_1fr_auto] gap-0">
         <div className="relative aspect-[5/3] md:aspect-auto md:min-h-full">
           <Image
-            src={a.salonCover}
-            alt={a.salonName}
+            src={a.salonImageUrl || FALLBACK_IMAGE}
+            alt={a.salonName || "Salon"}
             fill
             sizes="(max-width: 768px) 100vw, 200px"
             className="object-cover"
           />
         </div>
+
         <div className="p-5 md:p-6 flex flex-col justify-center gap-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">
-                {a.salonName}
+                {a.salonName || "Nepoznat salon"}
               </p>
+
               <h3 className="font-display mt-1 text-xl font-semibold">
-                {a.service}
+                {serviceLabel(a.serviceType)}
               </h3>
             </div>
+
             <StatusBadge status={a.status} />
           </div>
+
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <span className="inline-flex items-center gap-1.5 text-foreground/80">
               <CalendarIcon width={14} height={14} className="text-primary" />
-              {a.date}
+              {formatDate(a.appointmentDate)}
             </span>
+
             <span className="inline-flex items-center gap-1.5 text-foreground/80">
               <ClockIcon width={14} height={14} className="text-primary" />
-              {a.time} · {a.duration} min
+              {formatTime(a.startTime)} - {formatTime(a.endTime)} · {duration}{" "}
+              min
             </span>
+
             <span className="inline-flex items-center gap-1.5 text-foreground/80">
               <MapPinIcon width={14} height={14} className="text-primary" />
-              {SALONS.find((s) => s.id === a.salonId)?.city}
+              Salonify
             </span>
+
             <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
-              €{a.price}
+              {a.price} RSD
             </span>
           </div>
+
           {a.note && (
             <p className="text-sm text-muted bg-[var(--background-soft)] rounded-2xl px-4 py-2.5 mt-1">
-              <span className="font-medium text-foreground/80">Note: </span>
+              <span className="font-medium text-foreground/80">Napomena: </span>
               {a.note}
             </p>
           )}
         </div>
+
         <div className="p-5 md:p-6 md:pl-0 flex md:flex-col gap-2 md:justify-center md:min-w-[180px]">
-          <LinkButton
-            href={`/salons/${SALONS.find((s) => s.id === a.salonId)?.slug}`}
-            variant="outline"
-            size="sm"
-          >
-            View salon
+          <LinkButton href={`/salons/${a.slug}`} variant="outline" size="sm">
+            Vidi salon
           </LinkButton>
+
           {cancellable ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onCancel(a.id)}
+              disabled={isCanceling}
               className="!text-[#8a3948] hover:!bg-danger-soft"
             >
               <XIcon width={14} height={14} />
-              Cancel
+              {isCanceling ? "Otkazivanje..." : "Otkaži"}
             </Button>
           ) : a.status === "Completed" ? (
-            <Button variant="soft" size="sm">
+            <LinkButton
+              href={`/salons/${a.slug}#reviews`}
+              variant="soft"
+              size="sm"
+            >
               <SparkleIcon width={14} height={14} />
-              Leave review
-            </Button>
+              Ostavi recenziju
+            </LinkButton>
           ) : (
-            <Button variant="soft" size="sm">
+            <LinkButton href={`/salons/${a.salonId}`} variant="soft" size="sm">
               <HeartIcon width={14} height={14} />
-              Rebook
-            </Button>
+              Zakaži opet
+            </LinkButton>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3].map((item) => (
+        <div
+          key={item}
+          className="h-44 bg-white rounded-3xl border border-[var(--border)] shadow-softer animate-pulse"
+        />
+      ))}
     </div>
   );
 }
@@ -265,15 +382,17 @@ function Empty() {
   return (
     <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-14 text-center">
       <Avatar name="✿" size={56} />
+
       <h3 className="font-display mt-5 text-2xl font-semibold">
-        Nothing here yet
+        Nema termina
       </h3>
+
       <p className="mt-2 text-sm text-muted max-w-md mx-auto">
-        When you book an appointment it&rsquo;ll show up here. Ready to find
-        your next ritual?
+        Kada zakažeš termin, pojaviće se ovde. Spremna za sledeći beauty ritual?
       </p>
+
       <LinkButton href="/salons" className="mt-6" size="sm">
-        Discover salons <ArrowRightIcon width={14} height={14} />
+        Pronađi salone <ArrowRightIcon width={14} height={14} />
       </LinkButton>
     </div>
   );

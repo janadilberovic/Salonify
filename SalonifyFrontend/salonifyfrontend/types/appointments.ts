@@ -21,3 +21,17 @@ export type AppointmentApi = {
   status: AppointmentStatus;
   createdAt: string;
 };
+export type UserAppointment = {
+  id: string;
+  salonId: string;
+  salonName: string;
+  salonImageUrl: string;
+  serviceType: string;
+  price: number;
+  appointmentDate: string;
+  startTime: string;
+  endTime: string;
+  note?: string;
+  status: AppointmentStatus;
+  slug:string;
+};
