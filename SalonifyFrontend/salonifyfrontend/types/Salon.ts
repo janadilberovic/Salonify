@@ -35,3 +35,11 @@ export type UpdateSalonProfileRequest = {
   city: string;
   phone: string;
 };
+export type SalonSearchParams = {
+  city?: string | null;
+  serviceType?: string | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  day?: number | null;
+  time?: string | null;
+};

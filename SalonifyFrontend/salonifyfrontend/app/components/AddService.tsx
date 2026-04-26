@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { addSalonService } from "../../services/salonService";
+import { Console } from "console";
 
 const serviceTypes = [
   "Haircut",
@@ -37,6 +38,20 @@ export default function AddServiceModal({
   const [image, setImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setPrice("");
+    setDurationMinutes("");
+    setServiceType("0");
+    setImage(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   if (!open) return null;
 
   const handleSubmit = async () => {
@@ -54,9 +69,10 @@ export default function AddServiceModal({
       if (image) {
         formData.append("Image", image);
       }
-
+    
       await addSalonService(formData);
 
+      resetForm();
       onSuccess();
       onClose();
     } catch (error) {
@@ -76,7 +92,7 @@ export default function AddServiceModal({
           </h2>
 
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="size-9 rounded-full bg-[var(--background-soft)] hover:bg-primary-soft"
           >
             ✕
@@ -84,19 +100,31 @@ export default function AddServiceModal({
         </div>
 
         <div className="space-y-4">
-          <input
-            placeholder="Naziv usluge"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-2xl border px-4 py-3 outline-none"
-          />
+          <label className="block">
+            <span className="text-sm font-medium text-[#4b3758]">
+              Naziv usluge
+            </span>
 
-          <textarea
-            placeholder="Opis usluge"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-2xl border px-4 py-3 outline-none min-h-[100px]"
-          />
+            <input
+              placeholder="npr. Luxury Balayage"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-2 w-full rounded-2xl border px-4 py-3 outline-none"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-[#4b3758]">
+              Opis usluge
+            </span>
+
+            <textarea
+              placeholder="Unesi kratak opis usluge..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="mt-2 w-full rounded-2xl border px-4 py-3 outline-none min-h-[100px]"
+            />
+          </label>
 
           <div className="grid grid-cols-2 gap-4">
             <input
@@ -114,20 +142,27 @@ export default function AddServiceModal({
             />
           </div>
 
-          <select
-            value={serviceType}
-            onChange={(e) => setServiceType(e.target.value)}
-            className="w-full rounded-2xl border px-4 py-3 outline-none"
-          >
-            {serviceTypes.map((type, index) => (
-              <option key={index} value={index}>
-                {type}
-              </option>
-            ))}
-          </select>
+          <label className="block">
+            <span className="text-sm font-medium text-[#4b3758]">
+              Kategorija usluge
+            </span>
+
+            <select
+              value={serviceType}
+              onChange={(e) => setServiceType(e.target.value)}
+              className="mt-2 w-full rounded-2xl border px-4 py-3 outline-none"
+            >
+              {serviceTypes.map((type, index) => (
+                <option key={index} value={index}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <input
             type="file"
+            accept="image/*"
             onChange={(e) =>
               setImage(e.target.files ? e.target.files[0] : null)
             }
@@ -137,16 +172,16 @@ export default function AddServiceModal({
 
         <div className="flex justify-end gap-3 mt-6">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-5 py-3 rounded-2xl bg-[var(--background-soft)]"
           >
             Otkaži
           </button>
-
+           
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="px-5 py-3 rounded-2xl bg-primary text-white"
+            className="px-5 py-3 rounded-2xl bg-primary text-white disabled:opacity-60"
           >
             {loading ? "Dodavanje..." : "Dodaj uslugu"}
           </button>

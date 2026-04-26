@@ -19,6 +19,15 @@ const dayNames = [
   "Subota",
 ];
 
+const defaultWorkingDays: WorkingDayApi[] = [
+  { day: 1, startTime: "10:00:00", endTime: "20:00:00", isClosed: false },
+  { day: 2, startTime: "10:00:00", endTime: "20:00:00", isClosed: false },
+  { day: 3, startTime: "10:00:00", endTime: "20:00:00", isClosed: false },
+  { day: 4, startTime: "10:00:00", endTime: "20:00:00", isClosed: false },
+  { day: 5, startTime: "10:00:00", endTime: "20:00:00", isClosed: false },
+  { day: 6, startTime: "10:00:00", endTime: "18:00:00", isClosed: false },
+  { day: 0, startTime: null, endTime: null, isClosed: true },
+];
 export default function HoursPage() {
   const [hours, setHours] = useState<WorkingDayApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +40,17 @@ export default function HoursPage() {
   async function loadWorkingDays() {
     try {
       const data = await getMySalonWorkingDays();
-      setHours(data);
+       if (!data || data.length === 0) {
+        setHours(defaultWorkingDays);
+        return;
+      }
+
+      const mergedDays = defaultWorkingDays.map((defaultDay) => {
+        const existingDay = data.find((d) => d.day === defaultDay.day);
+        return existingDay ?? defaultDay;
+      });
+
+      setHours(mergedDays);
     } catch (error) {
       console.error("Greška pri učitavanju radnog vremena:", error);
     } finally {

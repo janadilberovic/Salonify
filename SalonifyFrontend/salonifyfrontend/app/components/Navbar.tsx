@@ -48,7 +48,7 @@ export default function Navbar() {
     setName(null);
     setOpen(false);
 
-    router.push("/login");
+    router.push("/");
   };
 
   return (

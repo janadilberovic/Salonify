@@ -66,6 +66,25 @@ function getServiceTypeNumber(service: Service) {
 
   return 11;
 }
+function isToday(dateKey: string) {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  return dateKey === todayKey;
+}
+
+function filterPastSlots(slots: AvailableSlot[], selectedDay: string) {
+  if (!isToday(selectedDay)) return slots;
+
+  const now = new Date();
+
+  return slots.filter((slot) => {
+    const [hours, minutes] = slot.startTime.split(":").map(Number);
+
+    const slotDate = new Date();
+    slotDate.setHours(hours, minutes, 0, 0);
+
+    return slotDate > now;
+  });
+}
 
 export default function BookingPanel({
   salonId,
@@ -113,7 +132,7 @@ export default function BookingPanel({
           serviceTypeNumber
         );
         console.log("dostupni",slots);
-        setAvailableSlots(slots);
+        setAvailableSlots(filterPastSlots(slots, selectedDay));
       } catch (err: any) {
         setAvailableSlots([]);
         setError(err?.message || "Nije moguće učitati slobodne termine.");

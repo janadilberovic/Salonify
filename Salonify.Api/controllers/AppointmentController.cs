@@ -44,6 +44,15 @@ public class AppointmentController : ControllerBase
 
         if (!TimeSpan.TryParse(appointmentDTO.StartTime, out var startTime))
             return BadRequest(new { message = "Neispravan format vremena. Koristi npr. 09:00:00." });
+        var now = DateTime.Now;
+
+        if (appointmentDTO.AppointmentDate.Date == now.Date && startTime <= now.TimeOfDay)
+        {
+            return BadRequest(new
+            {
+                message = "Ne možete zakazati termin u vremenu koje je već prošlo."
+            });
+        }
 
         if (appointmentDTO.DurationMinutes <= 0)
             return BadRequest(new { message = "Trajanje termina mora biti veće od 0." });
@@ -69,6 +78,7 @@ public class AppointmentController : ControllerBase
 
         TimeSpan duration = TimeSpan.FromMinutes((double)appointmentDTO.DurationMinutes);
         TimeSpan endTime = startTime.Add(duration);
+
 
         var hasConflict = await _appointmentRepository.HasConflictAsync(
             appointmentDTO.SalonId,
@@ -133,7 +143,7 @@ public class AppointmentController : ControllerBase
                 SalonName = salon?.Name ?? "Nepoznat salon",
                 SalonImageUrl = salon?.ImageUrl ?? "",
                 ServiceType = appointment.ServiceType,
-                ServiceImageUrl=service.ImageUrl,
+                ServiceImageUrl = service?.ImageUrl,
                 Price = appointment.Price,
                 AppointmentDate = appointment.AppointmentDate,
                 StartTime = appointment.StartTime,
@@ -339,7 +349,7 @@ public class AppointmentController : ControllerBase
             return Unauthorized(new { error = "Nedostaje UserId u tokenu!" });
 
 
-        AppointmentStatus status = AppointmentStatus.Cancelled;
+
 
         var appointment = await _appointmentRepository.GetByIdAsync(appointmentId);
 
@@ -390,6 +400,10 @@ public class AppointmentController : ControllerBase
             return BadRequest(new { message = "Neispravan tip usluge." });
         }
         var service = salon.Services.FirstOrDefault(s => s.ServiceType == parsedserviceType);
+        if (service == null)
+        {
+            return NotFound(new { message = "Salon nema ovu uslugu." });
+        }
         var day = date.DayOfWeek;
         WorkingDays workingDay = salon.WorkingDays.FirstOrDefault(wd => wd.Day == day);
 
@@ -418,25 +432,38 @@ public class AppointmentController : ControllerBase
         var slotStep = TimeSpan.FromMinutes(30);
         var availableSlots = new List<AvailableSlotDto>();
 
+        var now = DateTime.Now;
+
         TimeSpan currSlot = startTime;
 
         while (currSlot.Add(duration) <= endTime)
         {
-
             TimeSpan slotEnd = currSlot.Add(duration);
 
-            bool hasConflict = await _appointmentRepository.HasConflictAsync(salonid, date, currSlot, slotEnd);
+            var slotDateTime = date.Date + currSlot;
+
+            if (slotDateTime <= now)
+            {
+                currSlot = currSlot.Add(slotStep);
+                continue;
+            }
+
+            bool hasConflict = await _appointmentRepository.HasConflictAsync(
+                salonid,
+                date.Date,
+                currSlot,
+                slotEnd
+            );
 
             if (!hasConflict)
             {
-                //dodajem u available
-                var av = new AvailableSlotDto
+                availableSlots.Add(new AvailableSlotDto
                 {
-                    StartTime = currSlot.ToString(),
-                    EndTime = slotEnd.ToString()
-                };
-                availableSlots.Add(av);
+                    StartTime = currSlot.ToString(@"hh\:mm"),
+                    EndTime = slotEnd.ToString(@"hh\:mm")
+                });
             }
+
             currSlot = currSlot.Add(slotStep);
         }
         return Ok(new
@@ -533,7 +560,8 @@ public class AppointmentController : ControllerBase
     }
     private async Task AutoCompletePastAppointments(List<Appointment> appointments)
     {
-        var now = DateTime.Now;
+        var serbiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+        var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, serbiaTimeZone);
 
         foreach (var appointment in appointments)
         {

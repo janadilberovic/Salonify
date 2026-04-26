@@ -25,6 +25,28 @@ import {
 import { AppointmentStatus, UserAppointment } from "@/types/appointments";
 import { cancelAppointment, getUserAppointments } from "@/services/appointment";
 import { getImageUrl } from "../lib/imageUrl";
+function isAppointmentFinished(appointmentDate: string, endTime: string) {
+  const datePart = appointmentDate.slice(0, 10);
+  const timePart = endTime.slice(0, 5);
+
+  const appointmentEnd = new Date(`${datePart}T${timePart}:00`);
+  const now = new Date();
+
+  return appointmentEnd < now;
+}
+
+function getDisplayStatus(a: UserAppointment): AppointmentStatus {
+  const status = normalizeStatus(a.status);
+
+  if (
+    status === "Approved" &&
+    isAppointmentFinished(a.appointmentDate, a.endTime)
+  ) {
+    return "Completed";
+  }
+
+  return status;
+}
 
 const TABS: ("All" | AppointmentStatus)[] = [
   "All",
@@ -120,7 +142,7 @@ export default function AppointmentsPage() {
 
         const normalized = data.map((a) => ({
           ...a,
-          status: normalizeStatus(a.status),
+          status: getDisplayStatus(a),
         }));
 
         setAppts(normalized);

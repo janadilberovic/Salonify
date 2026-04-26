@@ -26,7 +26,8 @@ public class AuthService
         {
             Email = request.Email,
             Role = request.Role,
-            DisplayName = request.DisplayName
+            DisplayName = request.DisplayName,
+            Phone=request.Phone
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);

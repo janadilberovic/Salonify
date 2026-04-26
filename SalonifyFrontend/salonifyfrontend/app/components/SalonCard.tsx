@@ -1,16 +1,38 @@
+"use client"
 import Link from "next/link";
 import Image from "next/image";
 import { Rating } from "./ui";
 import { MapPinIcon, ArrowRightIcon } from "./Icons";
 import type { Salon } from "../lib/data";
+import { getAverageReviewsForSalon, getReviewsForSalon } from "@/services/reviews";
+import { useEffect, useState } from "react";
+import { Review } from "@/types/Review";
 
-export default function SalonCard({
+export default  function SalonCard({
   salon,
   featured = false,
 }: {
   salon: Salon;
   featured?: boolean;
 }) {
+  
+  const[averageRating,setAverageRating]=useState<number | null>(null);
+  const[ratings,setRatings]=useState<Review[] | null>(null);
+  async function loadRatings(){
+    const avgdata= await getAverageReviewsForSalon(salon.id);
+    if(avgdata!==null){
+      setAverageRating(avgdata);
+    }
+    const rat=await getReviewsForSalon(salon.id);
+    if(rat!=null){
+      setRatings(rat);
+    }
+  }
+
+useEffect(() => {
+      loadRatings();
+    }, []);
+    
   return (
     <Link
       href={`/salons/${salon.slug}`}
@@ -23,16 +45,13 @@ export default function SalonCard({
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
           className="object-cover group-hover:scale-105 transition duration-500"
+          unoptimized
         />
         <div className="absolute inset-x-0 top-0 p-4 flex items-start justify-between">
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-3 h-7 rounded-full bg-white/90 backdrop-blur text-foreground shadow-softer">
-            {"·".repeat(salon.priceLevel).split("").map((d, i) => (
-              <span key={i}>€</span>
-            ))}
-          </span>
+        
           {featured && (
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 h-7 rounded-full bg-primary text-white shadow-soft">
-              Editor&rsquo;s pick
+              Naš izbor
             </span>
           )}
         </div>
@@ -53,9 +72,9 @@ export default function SalonCard({
             <p className="text-sm text-muted mt-1 truncate">{salon.tagline}</p>
           </div>
           <div className="text-right shrink-0">
-            <Rating value={salon.rating} size={13} />
+            <Rating value={averageRating ? averageRating : 0} size={13} />
             <p className="text-[11px] text-muted mt-1">
-              {salon.reviewCount} reviews
+              {ratings?.length} recenzije
             </p>
           </div>
         </div>
@@ -73,10 +92,10 @@ export default function SalonCard({
 
         <div className="mt-5 pt-4 border-t border-[var(--border)] flex items-center justify-between">
           <span className="text-xs text-muted">
-            from €{Math.min(...salon.services.map((s) => s.price))}
+            od {Math.min(...salon.services.map((s) => s.price))} rsd
           </span>
           <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary group-hover:gap-2.5 transition-all">
-            Book
+            Rezerviši
             <ArrowRightIcon width={14} height={14} />
           </span>
         </div>

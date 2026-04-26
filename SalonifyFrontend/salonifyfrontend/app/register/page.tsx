@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const [firstName, setFirstName] = useState("");
   const [lastOrSalonName, setLastOrSalonName] = useState("");
   const [salonDescription, setSalonDescription] = useState("");
-
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -47,8 +47,8 @@ export default function RegisterPage() {
       password,
       displayName,
       role: role === "user" ? 0 : 1,
-      salonDescription:
-        role === "salon" ? salonDescription : undefined,
+      phone: phoneNumber ? phoneNumber : "string",
+      salonDescription: role === "salon" ? salonDescription : undefined,
     });
   };
 
@@ -68,7 +68,7 @@ export default function RegisterPage() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <Label>Registrujem se kao</Label>
 
@@ -92,7 +92,7 @@ export default function RegisterPage() {
         </div>
 
         {role === "salon" ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
               <Label htmlFor="last">Naziv salona</Label>
               <Input
@@ -110,9 +110,7 @@ export default function RegisterPage() {
                 id="description"
                 placeholder="Profesionalne usluge nege, frizure, nokti..."
                 value={salonDescription}
-                onChange={(e) =>
-                  setSalonDescription(e.target.value)
-                }
+                onChange={(e) => setSalonDescription(e.target.value)}
                 disabled={loading}
               />
             </div>
@@ -142,7 +140,17 @@ export default function RegisterPage() {
             </div>
           </div>
         )}
-
+        <div>
+          <Label htmlFor="phone">Broj telefona</Label>
+          <Input
+            id="phone"
+            type="tel"
+            placeholder="0612345678"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            disabled={loading}
+          />
+        </div>
         <div>
           <Label htmlFor="email">Email adresa</Label>
           <Input
@@ -168,17 +176,13 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <Label htmlFor="confirmPassword">
-            Ponovite lozinku
-          </Label>
+          <Label htmlFor="confirmPassword">Ponovite lozinku</Label>
           <Input
             id="confirmPassword"
             type="password"
             placeholder="Ponovite lozinku"
             value={confirmPassword}
-            onChange={(e) =>
-              setConfirmPassword(e.target.value)
-            }
+            onChange={(e) => setConfirmPassword(e.target.value)}
             disabled={loading}
           />
         </div>
@@ -204,36 +208,21 @@ export default function RegisterPage() {
 
           <span>
             Prihvatam{" "}
-            <Link
-              href="#"
-              className="text-primary hover:underline"
-            >
+            <Link href="#" className="text-primary hover:underline">
               uslove korišćenja
             </Link>{" "}
             i{" "}
-            <Link
-              href="#"
-              className="text-primary hover:underline"
-            >
+            <Link href="#" className="text-primary hover:underline">
               politiku privatnosti
             </Link>
             .
           </span>
         </label>
 
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full"
-          disabled={loading}
-        >
-          {loading
-            ? "Kreiranje naloga..."
-            : "Kreiraj nalog"}
+        <Button type="submit" size="lg" className="w-full" disabled={loading}>
+          {loading ? "Kreiranje naloga..." : "Kreiraj nalog"}
 
-          {!loading && (
-            <ArrowRightIcon width={16} height={16} />
-          )}
+          {!loading && <ArrowRightIcon width={16} height={16} />}
         </Button>
       </form>
     </AuthShell>
@@ -265,18 +254,14 @@ function RoleTile({
     >
       <span
         className={`inline-flex items-center justify-center size-10 rounded-xl ${
-          active
-            ? "bg-primary text-white"
-            : "bg-primary-soft text-primary"
+          active ? "bg-primary text-white" : "bg-primary-soft text-primary"
         }`}
       >
         {icon}
       </span>
 
       <p className="mt-3 text-sm font-semibold">{title}</p>
-      <p className="text-xs text-muted mt-0.5">
-        {subtitle}
-      </p>
+      <p className="text-xs text-muted mt-0.5">{subtitle}</p>
 
       {active && (
         <span className="absolute top-3 right-3 size-6 rounded-full bg-primary text-white grid place-items-center">

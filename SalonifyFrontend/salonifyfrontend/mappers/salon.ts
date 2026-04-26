@@ -3,6 +3,8 @@ import { SalonApi } from "@/types/Salon";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export function mapSalonApiToUI(salon: SalonApi): Salon {
+  const services = salon.services ?? [];
+  const workingDays = salon.workingDays ?? [];
   return {
     id: salon.id,
     slug: salon.slug || salon.id,
@@ -13,7 +15,7 @@ export function mapSalonApiToUI(salon: SalonApi): Salon {
     address: salon.address || "Adresa nije uneta",
     phone: salon.phone || "Telefon nije unet",
     gallery: salon.galleryImageUrls?.map(getImageUrl) || [],
-    cover:getImageUrl(salon.imageUrl),
+    cover: getImageUrl(salon.imageUrl),
     rating: 0,
     reviewCount: 0,
     categories: salon.services.map((s) => s.name),
@@ -34,7 +36,7 @@ export function mapSalonApiToUI(salon: SalonApi): Salon {
       duration: s.durationMinutes,
       durationMinutes: s.durationMinutes,
       image: getImageUrl(s.imageUrl),
-      imageUrl: getImageUrl(s.imageUrl) ,
+      imageUrl: getImageUrl(s.imageUrl),
       category: s.name,
       serviceType: s.serviceType,
     })),

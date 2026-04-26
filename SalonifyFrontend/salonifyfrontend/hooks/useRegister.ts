@@ -8,6 +8,7 @@ type RegisterRequest = {
   email: string;
   password: string;
   role: number;
+  phone:string;
   displayName: string;
   salonDescription?: string;
 };

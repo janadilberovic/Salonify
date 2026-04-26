@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
+import { useSearchParams } from "next/navigation";
 import {
   Button,
   Input,
@@ -29,7 +29,8 @@ import { TrashIcon } from "lucide-react";
 
 export default function ProfilePage() {
   const { salon, loading, error } = useMySalon();
-
+  const searchParams = useSearchParams();
+  const welcome = searchParams.get("welcome");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -116,6 +117,22 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
+      {welcome && (
+        <div className="mb-6 rounded-3xl border border-primary/20 bg-primary-soft p-6">
+          <p className="text-sm font-semibold text-primary uppercase tracking-wide">
+            Dobrodošli u Salonify
+          </p>
+
+          <h2 className="mt-2 text-2xl font-semibold">
+            Unesite osnovne informacije o salonu
+          </h2>
+
+          <p className="mt-2 text-muted">
+            Dodajte naziv, opis, adresu, broj telefona i fotografije kako bi
+            korisnici mogli da pronađu vaš salon i zakažu termin.
+          </p>
+        </div>
+      )}
       <div>
         <EyebrowLabel>Profil salona</EyebrowLabel>
 
@@ -320,9 +337,7 @@ export default function ProfilePage() {
                 sizes="200px"
                 className="object-cover"
                 unoptimized
-                
               />
-              
             </div>
           ))}
 

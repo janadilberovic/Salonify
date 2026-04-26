@@ -46,7 +46,7 @@ export default function SalonDashboardPage() {
   useEffect(() => {
     loadAverageRating();
   }, []);
-  const todayDate = new Date().toISOString().split("T")[0];
+  const todayDate = new Date().toLocaleDateString("sv-SE");
   async function loadAverageRating() {
     try {
       const salon = await getMySalon(); // ako već uzimaš salon
@@ -57,14 +57,14 @@ export default function SalonDashboardPage() {
     }
   }
   const todayAppointments = useMemo(() => {
-    return appointments.filter((appointment) => {
-      const appointmentDate = new Date(appointment.appointmentDate)
-        .toISOString()
-        .split("T")[0];
+  return appointments.filter((appointment) => {
+    const appointmentDate = new Date(
+      appointment.appointmentDate
+    ).toLocaleDateString("sv-SE");
 
-      return appointmentDate === todayDate;
-    });
-  }, [appointments, todayDate]);
+    return appointmentDate === todayDate;
+  });
+}, [appointments, todayDate]);
   const pendingAppointments = useMemo(() => {
     return appointments
       .filter((appointment) => appointment.status === "Pending")
@@ -80,12 +80,15 @@ export default function SalonDashboardPage() {
       });
   }, [appointments]);
 
-  const todayRevenue = useMemo(() => {
-    return todayAppointments
-      .filter((appointment) => appointment.status === "Completed")
-      .reduce((sum, appointment) => sum + Number(appointment.price || 0), 0);
-  }, [todayAppointments]);
-
+ const todayRevenue = useMemo(() => {
+  return todayAppointments
+    .filter(
+      (appointment) =>
+        appointment.status === "Approved" ||
+        appointment.status === "Completed"
+    )
+    .reduce((sum, appointment) => sum + Number(appointment.price || 0), 0);
+}, [todayAppointments]);
   const handleAccept = async (appointmentId: string) => {
     try {
       setActionLoadingId(appointmentId);
@@ -152,7 +155,7 @@ export default function SalonDashboardPage() {
         />
 
         <StatCard
-          title="Prihod"
+          title="Današnji prihod"
           value={`${todayRevenue} RSD`}
           description="Procena za aktivne termine"
           className="bg-green-100"
