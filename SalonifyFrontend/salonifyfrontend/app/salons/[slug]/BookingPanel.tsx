@@ -53,7 +53,7 @@ export const ServiceTypeMap: Record<string, number> = {
 
 function getServiceTypeNumber(service: Service) {
   if (typeof service.category === "number") {
-    return service.category;
+    return service.category;  
   }
 
   if (typeof service.category === "string") {
@@ -114,12 +114,12 @@ export default function BookingPanel({
       if (!salonId || !selectedDay || !service) return;
 
       const serviceTypeNumber = getServiceTypeNumber(service);
-
+       console.log("treba broj", serviceTypeNumber);
       if (Number.isNaN(serviceTypeNumber)) {
         setAvailableSlots([]);
         setError("ServiceType nije validan broj.");
         return;
-      }
+      } 
 
       try {
         setError("");
@@ -148,6 +148,7 @@ export default function BookingPanel({
     if (!service || !selectedDay || !selectedTime) return;
 
     const serviceTypeNumber = getServiceTypeNumber(service);
+   
 
     if (Number.isNaN(serviceTypeNumber)) {
       setError("ServiceType nije validan broj.");

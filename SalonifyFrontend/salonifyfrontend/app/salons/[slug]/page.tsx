@@ -35,11 +35,11 @@ export default async function SalonPage({
   }
   const averageRating = await getAverageReviewsForSalon(salon.id);
   const reviews =await getReviewsForSalon(salon.id);
-  const related = SALONS.filter(
+  /* ovde idu preporuceni const related = SALONS.filter(
     (s) =>
       s.id !== salon.id &&
       s.categories.some((c) => salon.categories.includes(c)),
-  ).slice(0, 3);
+  ).slice(0, 3);*/ 
   function getDayName(day: number) {
   const days = [
     "Nedelja",
@@ -280,7 +280,7 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
         />
       </section>
 
-      {/* RELATED */}
+      {/* RELATED 
       {related.length > 0 && (
         <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-24">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
@@ -302,7 +302,7 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
           </div>
         </section>
       )}
-
+*/}
       <Footer />
     </>
   );
@@ -314,7 +314,7 @@ function RelatedCard({ salon }: { salon: Salon }) {
 
   return (
     <Link
-      href={`/salons/${salon.slug}`}
+      href={`/salons/${salon.id}`}
       className="group bg-white rounded-3xl border border-[var(--border)] shadow-softer overflow-hidden hover-lift"
     >
       <div className="relative aspect-[16/10]">

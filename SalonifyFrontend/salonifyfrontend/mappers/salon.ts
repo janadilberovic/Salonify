@@ -1,5 +1,6 @@
 import { Salon } from "@/app/lib/data";
 import { SalonApi } from "@/types/Salon";
+import { mapServiceTypeToSr } from "./appointment";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export function mapSalonApiToUI(salon: SalonApi): Salon {
@@ -37,7 +38,7 @@ export function mapSalonApiToUI(salon: SalonApi): Salon {
       durationMinutes: s.durationMinutes,
       image: getImageUrl(s.imageUrl),
       imageUrl: getImageUrl(s.imageUrl),
-      category: s.name,
+      category:  mapServiceTypeToSr(s.serviceType),
       serviceType: s.serviceType,
     })),
   };
