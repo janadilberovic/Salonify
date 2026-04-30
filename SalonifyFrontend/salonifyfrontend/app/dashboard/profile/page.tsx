@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -27,7 +28,7 @@ import {
 } from "@/services/salon";
 import { TrashIcon } from "lucide-react";
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const { salon, loading, error } = useMySalon();
   const searchParams = useSearchParams();
   const welcome = searchParams.get("welcome");
@@ -347,5 +348,13 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<p>Učitavanje...</p>}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }

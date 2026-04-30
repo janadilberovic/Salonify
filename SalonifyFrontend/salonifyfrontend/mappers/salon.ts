@@ -1,5 +1,5 @@
-import { Salon } from "@/app/lib/data";
-import { SalonApi } from "@/types/Salon";
+import { Salon, Service } from "@/app/lib/data";
+import { SalonApi, ServiceApi } from "@/types/Salon";
 import { mapServiceTypeToSr } from "./appointment";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -51,3 +51,4 @@ function getImageUrl(url?: string | null) {
 
   return `${API_BASE_URL}${url}`;
 }
+

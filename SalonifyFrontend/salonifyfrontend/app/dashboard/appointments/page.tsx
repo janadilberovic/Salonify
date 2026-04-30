@@ -110,11 +110,11 @@ export default function AppointmentsPage() {
   .filter((a) => (tab === "All" ? true : a.status === tab))
   .sort((a, b) => {
     const dateA = new Date(
-      `${a.appointmentDate.split("T")[0]}T${a.startTime}`
+      `${a.appointmentDate.includes("T") ? a.appointmentDate.split("T")[0] : a.appointmentDate}T${a.startTime}`
     );
 
     const dateB = new Date(
-      `${b.appointmentDate.split("T")[0]}T${b.startTime}`
+      `${b.appointmentDate.includes("T") ? b.appointmentDate.split("T")[0] : b.appointmentDate}T${b.startTime}`
     );
 
     return dateB.getTime() - dateA.getTime();
@@ -315,7 +315,9 @@ function normalizeStatus(status: string | number) {
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("sr-RS");
+  // Parse DateOnly format (YYYY-MM-DD) safely
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("sr-RS");
 }
 
 function formatTime(time: string) {

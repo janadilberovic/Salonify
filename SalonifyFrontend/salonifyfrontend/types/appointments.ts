@@ -39,6 +39,7 @@ export type UserAppointment = {
 export type AvailableSlot = {
   startTime: string;
   endTime: string;
+  isAvailable: boolean;
 };
 export type CreateAppointmentPayload = {
   salonId: string;

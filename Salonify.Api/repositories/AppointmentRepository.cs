@@ -46,14 +46,14 @@ public class AppointmentRepository
         return await _appointments.Find(a => a.SalonId == salonId).ToListAsync();
     }
 
-    public async Task<List<Appointment>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
+    public async Task<List<Appointment>> GetByDateRangeAsync(DateOnly startDate, DateOnly endDate)
     {
         return await _appointments.Find(a => a.AppointmentDate >= startDate && a.AppointmentDate <= endDate).ToListAsync();
     }
 
-    public async Task<bool> HasConflictAsync(string salonId, DateTime appointmentDate, TimeSpan startTime, TimeSpan endTime)
+    public async Task<bool> HasConflictAsync(string salonId, DateOnly appointmentDate, TimeSpan startTime, TimeSpan endTime)
     {
-        var dayStart = appointmentDate.Date;
+        var dayStart = appointmentDate;
         var dayEnd = dayStart.AddDays(1);
 
         var appointments = await _appointments.Find(a =>
@@ -93,9 +93,9 @@ public class AppointmentRepository
         await _appointments.UpdateOneAsync(a => a.Id == appointmentId, update);
     }
     //termini za odredjeni salon za datum koji su aktivni
-    public async Task<List<Appointment>> GetSalonAppointmentsByDateAsync(string salonId, DateTime date)
+    public async Task<List<Appointment>> GetSalonAppointmentsByDateAsync(string salonId, DateOnly date)
     {
-        var startOfDay = date.Date;
+        var startOfDay = date;
         var endOfDay = startOfDay.AddDays(1);
 
         return await _appointments.Find(a =>
@@ -108,11 +108,11 @@ public class AppointmentRepository
     }
 
     //termini koji su slobodni za odredjeni salon za datum
-    public async Task<List<Appointment>> GetAvailableSalonAppointmentsByDateAsync(string salonId, DateTime date)
+    public async Task<List<Appointment>> GetAvailableSalonAppointmentsByDateAsync(string salonId, DateOnly date)
     {
         return await _appointments.Find(a =>
             a.SalonId == salonId &&
-            a.AppointmentDate.Date == date.Date &&
+            a.AppointmentDate == date &&
             a.Status != AppointmentStatus.Approved
         ).ToListAsync();
     }
@@ -124,23 +124,28 @@ public class AppointmentRepository
     }
     public async Task<List<Appointment>> GetUpcomingAppointmentsForSalon(string salonid)
     {
-        var today=DateTime.UtcNow.Date;
+      
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
         return await _appointments.Find(a=> a.SalonId==salonid && a.AppointmentDate>=today).ToListAsync();
     }
     public async Task<List<Appointment>> GetUpcomingAppointmentsForUser(string userId)
     {
-        var today=DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
         return await _appointments.Find(a=> a.UserId==userId && a.AppointmentDate>=today).ToListAsync();
     }
     //history 
      public async Task<List<Appointment>> GetHistoryForSalon(string salonid)
     {
-        var today=DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
         return await _appointments.Find(a=> a.SalonId==salonid && a.AppointmentDate<=today).ToListAsync();
     }
     public async Task<List<Appointment>> GetHistoryForUser(string userId)
     {
-        var today=DateTime.UtcNow.Date;
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
         return await _appointments.Find(a=> a.UserId==userId && a.AppointmentDate<=today).ToListAsync();
     }
     //zavrsenu uslugu 

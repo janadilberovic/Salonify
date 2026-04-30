@@ -19,7 +19,7 @@ public class Appointment
      public decimal Price { get; set; } 
 
     // Datum i vreme termina
-    public DateTime AppointmentDate { get; set; }
+    public DateOnly AppointmentDate { get; set; }
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }
     public string? Note { get; set; }

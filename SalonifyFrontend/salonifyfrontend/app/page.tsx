@@ -125,10 +125,10 @@ export default function Home() {
 
               <div className="absolute top-8 right-8 w-[60%] h-[60%] rounded-[2rem] overflow-hidden shadow-lift floaty-slow">
                 <Image
-                  src="/../img/feniranje.jpg"
+                  src="/feniranje.jpg"
                   alt="Salon interior"
                   fill
-                  sizes="500px"
+                  sizes="500px"   
                   className="object-cover"
                   priority
                   unoptimized
@@ -137,7 +137,7 @@ export default function Home() {
 
               <div className="absolute bottom-10 left-6 w-[52%] h-[46%] rounded-[2rem] overflow-hidden shadow-lift floaty">
                 <Image
-                  src="https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=700&q=80"
+                  src="/salon.jpg"
                   alt="Beauty treatment"
                   fill
                   sizes="400px"

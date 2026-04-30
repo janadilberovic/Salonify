@@ -46,7 +46,7 @@ export default function SalonDashboardPage() {
   useEffect(() => {
     loadAverageRating();
   }, []);
-  const todayDate = new Date().toLocaleDateString("sv-SE");
+  const todayDate = new Date().toISOString().split("T")[0];
   async function loadAverageRating() {
     try {
       const salon = await getMySalon(); // ako već uzimaš salon
@@ -58,11 +58,7 @@ export default function SalonDashboardPage() {
   }
   const todayAppointments = useMemo(() => {
   return appointments.filter((appointment) => {
-    const appointmentDate = new Date(
-      appointment.appointmentDate
-    ).toLocaleDateString("sv-SE");
-
-    return appointmentDate === todayDate;
+    return appointment.appointmentDate === todayDate;
   });
 }, [appointments, todayDate]);
   const pendingAppointments = useMemo(() => {
@@ -70,10 +66,10 @@ export default function SalonDashboardPage() {
       .filter((appointment) => appointment.status === "Pending")
       .sort((a, b) => {
         const dateA = new Date(
-          `${a.appointmentDate.split("T")[0]}T${a.startTime}`,
+          `${a.appointmentDate.includes("T") ? a.appointmentDate.split("T")[0] : a.appointmentDate}T${a.startTime}`,
         );
         const dateB = new Date(
-          `${b.appointmentDate.split("T")[0]}T${b.startTime}`,
+          `${b.appointmentDate.includes("T") ? b.appointmentDate.split("T")[0] : b.appointmentDate}T${b.startTime}`,
         );
 
         return dateB.getTime() - dateA.getTime();
@@ -336,7 +332,9 @@ function getInitials(name?: string) {
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("sr-RS", {
+  // Parse DateOnly format (YYYY-MM-DD) safely
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("sr-RS", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

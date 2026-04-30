@@ -439,6 +439,7 @@ public class SalonRepository
         return salons.Select(s => new SalonSearchResultDto
         {
             Id = s.Id,
+            Name=s.Name,
             UserId = s.UserId,
             Description = s.Description,
             Address = s.Address,

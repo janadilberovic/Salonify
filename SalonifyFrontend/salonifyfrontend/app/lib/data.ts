@@ -6,6 +6,7 @@ export type Service = {
   duration: number; // minutes
   image: string;
   category: string;
+  serviceType?:number;
 };
 
 export type Review = {

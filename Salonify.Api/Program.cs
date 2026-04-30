@@ -1,4 +1,3 @@
-
 using Microsoft.OpenApi.Models;
 using Salonify.Api.Services;
 
@@ -7,10 +6,14 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Salonify.Api.Repositories;
 using System.Security.Claims;
+using MongoDB.Bson.Serialization;
 
 WebApplicationBuilder webApplicationBuilder = WebApplication.CreateBuilder(args);
 
 var builder = webApplicationBuilder;
+
+// ===== CONFIGURE MONGODB SERIALIZERS =====
+BsonSerializer.RegisterSerializer(new DateOnlySerializer());
 
 // ===== SERVICES =====
 builder.Services.AddSingleton<MongoDbContext>();

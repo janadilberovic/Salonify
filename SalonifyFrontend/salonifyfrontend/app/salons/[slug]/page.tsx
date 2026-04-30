@@ -29,7 +29,6 @@ export default async function SalonPage({
 
   try {
     salon = await getSalonBySlugOrId(slug);
-    const openStatus = getSalonOpenStatus(salon.openingHours);
   } catch {
     notFound();
   }
@@ -55,7 +54,6 @@ export default async function SalonPage({
 }
  
 const openStatus = getSalonOpenStatus(salon.openingHours);
-//const reviews = await getReviewsForSalon(salon.id);
 
   return (
     <>
@@ -349,34 +347,70 @@ function getSalonOpenStatus(
     closed?: boolean;
   }[],
 ) {
-  const todayName = getTodayName();
+  const now = new Date();
+  const todayNumber = now.getDay(); // 0 = Sunday, 1 = Monday, itd.
+  
+  // Mapiramo dnevne vrednosti na razne formate koje može poslati API
+  const dayMaps = [
+    { num: 0, en: "Sun", sr: "Nedelja" },
+    { num: 1, en: "Mon", sr: "Ponedeljak" },
+    { num: 2, en: "Tue", sr: "Utorak" },
+    { num: 3, en: "Wed", sr: "Sreda" },
+    { num: 4, en: "Thu", sr: "Četvrtak" },
+    { num: 5, en: "Fri", sr: "Petak" },
+    { num: 6, en: "Sat", sr: "Subota" },
+  ];
 
-  const today = openingHours.find((h) => h.day === todayName);
+  const todayMap = dayMaps[todayNumber];
+  
+  // Pokusavamo da pronađemo dan u raznim formatima
+  const today = openingHours.find((h) => 
+    h.day === todayMap?.en || 
+    h.day === todayMap?.sr || 
+    h.day === String(todayNumber)
+  );
 
-  if (!today || today.closed || today.hours === "Zatvoreno") {
+  if (!today || today.closed || today.hours === "Zatvoreno" || today.hours === "Closed") {
     return {
       isOpen: false,
       label: "Sada zatvoreno",
     };
   }
 
-  const [start, end] = today.hours.split(" - ");
+  // Parsiramo vreme - rukujemo sa " - " ili "-" separatorima
+  const timeParts = today.hours.includes(" - ") 
+    ? today.hours.split(" - ")
+    : today.hours.split("-").map(t => t.trim());
+
+  if (timeParts.length < 2) {
+    return {
+      isOpen: false,
+      label: "Nema podataka o vremenu",
+    };
+  }
+
+  const start = timeParts[0].trim();
+  const end = timeParts[1].trim();
 
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
 
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) {
+    return {
+      isOpen: false,
+      label: "Nema podataka o vremenu",
+    };
+  }
 
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const startMinutes = sh * 60 + sm;
   const endMinutes = eh * 60 + em;
 
-  const isOpen =
-    currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  const isOpen = currentMinutes >= startMinutes && currentMinutes < endMinutes;
 
   return {
     isOpen,
-    label: isOpen ? "Open now" : "Closed now",
+    label: isOpen ? "Sada otvoreno" : "Sada zatvoreno",
   };
 }
 function getTodayName() {

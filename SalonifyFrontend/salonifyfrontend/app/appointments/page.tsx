@@ -25,28 +25,6 @@ import {
 import { AppointmentStatus, UserAppointment } from "@/types/appointments";
 import { cancelAppointment, getUserAppointments } from "@/services/appointment";
 import { getImageUrl } from "../lib/imageUrl";
-function isAppointmentFinished(appointmentDate: string, endTime: string) {
-  const datePart = appointmentDate.slice(0, 10);
-  const timePart = endTime.slice(0, 5);
-
-  const appointmentEnd = new Date(`${datePart}T${timePart}:00`);
-  const now = new Date();
-
-  return appointmentEnd < now;
-}
-
-function getDisplayStatus(a: UserAppointment): AppointmentStatus {
-  const status = normalizeStatus(a.status);
-
-  if (
-    status === "Approved" &&
-    isAppointmentFinished(a.appointmentDate, a.endTime)
-  ) {
-    return "Completed";
-  }
-
-  return status;
-}
 
 const TABS: ("All" | AppointmentStatus)[] = [
   "All",
@@ -93,13 +71,11 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
   Other: "Ostalo",
 };
 
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900&q=80";
+function normalizeStatus(status: AppointmentStatus | number): AppointmentStatus {
+  if (typeof status === "number") {
+    return STATUS_MAP[status] ?? "Pending";
+  }
 
-function normalizeStatus(
-  status: AppointmentStatus | number,
-): AppointmentStatus {
-  if (typeof status === "number") return STATUS_MAP[status] ?? "Pending";
   return status;
 }
 
@@ -108,13 +84,26 @@ function serviceLabel(serviceType: string | number) {
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("sr-RS", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
+  const datePart = date.includes("T") ? date.split("T")[0] : date;
+  const [year, month, day] = datePart.split("-").map(Number);
 
+  const months = [
+    "januar",
+    "februar",
+    "mart",
+    "april",
+    "maj",
+    "jun",
+    "jul",
+    "avgust",
+    "septembar",
+    "oktobar",
+    "novembar",
+    "decembar",
+  ];
+
+  return `${String(day).padStart(2, "0")}. ${months[month - 1]} ${year}.`;
+}
 function formatTime(time: string) {
   return time?.slice(0, 5);
 }
@@ -142,7 +131,7 @@ export default function AppointmentsPage() {
 
         const normalized = data.map((a) => ({
           ...a,
-          status: getDisplayStatus(a),
+          status: normalizeStatus(a.status),
         }));
 
         setAppts(normalized);
@@ -278,6 +267,7 @@ function Stat({ n, l, tint }: { n: number; l: string; tint: string }) {
       >
         {n}
       </span>
+
       <p className="text-xs mt-2 uppercase tracking-[0.15em] text-muted">{l}</p>
     </div>
   );
@@ -285,17 +275,14 @@ function Stat({ n, l, tint }: { n: number; l: string; tint: string }) {
 
 function AppointmentRow({
   a,
-
   onCancel,
   isCanceling,
 }: {
   a: UserAppointment;
-
   onCancel: (id: string) => void;
   isCanceling: boolean;
 }) {
   const cancellable = a.status === "Pending" || a.status === "Approved";
-
   const duration = getDuration(a.startTime, a.endTime);
 
   return (
@@ -303,8 +290,8 @@ function AppointmentRow({
       <div className="grid md:grid-cols-[200px_1fr_auto] gap-0">
         <div className="relative aspect-[5/3] md:aspect-auto md:min-h-full">
           <Image
-             src={getImageUrl(a.serviceImageUrl)}
-           alt={a.serviceType || serviceLabel(a.serviceType)}
+            src={getImageUrl(a.serviceImageUrl)}
+            alt={String(a.serviceType || serviceLabel(a.serviceType))}
             fill
             sizes="(max-width: 768px) 100vw, 200px"
             className="object-cover"

@@ -152,3 +152,21 @@ body {
 input, textarea, select {
   font: inherit;
 }
+.rdp {
+  --rdp-accent-color: var(--primary) !important;
+  --rdp-accent-background-color: var(--primary-soft) !important;
+}
+.rdp-selected .rdp-day_button {
+  background-color: #a78bda !important;
+  color: white !important;
+  border-color: #a78bda !important;
+}
+
+.rdp-today .rdp-day_button {
+  border-color: #a78bda !important;
+  color: #a78bda !important;
+}
+
+.rdp-chevron {
+  fill: #a78bda !important;
+}

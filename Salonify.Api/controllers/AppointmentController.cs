@@ -38,15 +38,17 @@ public class AppointmentController : ControllerBase
     {
         if (appointmentDTO == null)
             return BadRequest(new { message = "Podaci nisu validni." });
+        var today = DateOnly.FromDateTime(DateTime.Now);
 
-        if (appointmentDTO.AppointmentDate.Date < DateTime.UtcNow.Date)
+        if (appointmentDTO.AppointmentDate < today)
             return BadRequest(new { message = "Ne možete zakazati termin u prošlosti." });
 
         if (!TimeSpan.TryParse(appointmentDTO.StartTime, out var startTime))
             return BadRequest(new { message = "Neispravan format vremena. Koristi npr. 09:00:00." });
-        var now = DateTime.Now;
+        var serbiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+        var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, serbiaTimeZone);
 
-        if (appointmentDTO.AppointmentDate.Date == now.Date && startTime <= now.TimeOfDay)
+        if (appointmentDTO.AppointmentDate == today && startTime <= now.TimeOfDay)
         {
             return BadRequest(new
             {
@@ -82,7 +84,7 @@ public class AppointmentController : ControllerBase
 
         var hasConflict = await _appointmentRepository.HasConflictAsync(
             appointmentDTO.SalonId,
-            appointmentDTO.AppointmentDate.Date,
+            appointmentDTO.AppointmentDate,
             startTime,
             endTime
         );
@@ -96,7 +98,7 @@ public class AppointmentController : ControllerBase
             SalonId = appointmentDTO.SalonId,
             ServiceType = appointmentDTO.ServiceType,
             Price = service.Price,
-            AppointmentDate = appointmentDTO.AppointmentDate.Date,
+            AppointmentDate = appointmentDTO.AppointmentDate,
             StartTime = startTime,
             EndTime = endTime,
             Note = appointmentDTO.Note,
@@ -373,7 +375,7 @@ public class AppointmentController : ControllerBase
     //prikaz za odredjeni salon za termine koje ima taj dan
     [Authorize(Roles = "Salon,Admin")]
     [HttpGet("salon/date")]
-    public async Task<IActionResult> GetSalonAppointmentsByDate([FromQuery] DateTime date)
+    public async Task<IActionResult> GetSalonAppointmentsByDate([FromQuery] DateOnly date)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -384,27 +386,34 @@ public class AppointmentController : ControllerBase
         var appointments = await _appointmentRepository.GetSalonAppointmentsByDateAsync(userId, date);
         return Ok(appointments);
     }
-    //vrati sve slobodne termine za neki salon za odredjeni datum
+    // vrati sve termine za neki salon za odredjeni datum
     [HttpGet("salon/{salonid}/get-available-appointments-by-date")]
-    public async Task<IActionResult> GetAvailableAppointmentsByDate(string salonid, [FromQuery] DateTime date,
-    [FromQuery] string serviceT)
+    public async Task<IActionResult> GetAvailableAppointmentsByDate(
+        string salonid,
+        [FromQuery] DateOnly date,
+        [FromQuery] string serviceT)
     {
         var salon = await _salonRepository.GetByIdAsync(salonid);
+
         if (salon == null)
         {
-            return NotFound(new { message = "Ne postoji salon sa ovim idjem." });
+            return NotFound(new { message = "Ne postoji salon sa ovim id-jem." });
         }
 
         if (!Enum.TryParse<ServiceType>(serviceT, true, out var parsedserviceType))
         {
             return BadRequest(new { message = "Neispravan tip usluge." });
         }
+
         var service = salon.Services.FirstOrDefault(s => s.ServiceType == parsedserviceType);
+
         if (service == null)
         {
             return NotFound(new { message = "Salon nema ovu uslugu." });
         }
+
         var day = date.DayOfWeek;
+
         WorkingDays workingDay = salon.WorkingDays.FirstOrDefault(wd => wd.Day == day);
 
         if (workingDay == null)
@@ -414,70 +423,65 @@ public class AppointmentController : ControllerBase
 
         if (workingDay.IsClosed)
         {
-            return NotFound(new { message = "Salon ne radi tog dana" });
+            return Ok(new
+            {
+                message = "Salon ne radi tog dana.",
+                data = new List<AvailableSlotDto>()
+            });
         }
-
-
 
         if (!workingDay.StartTime.HasValue || !workingDay.EndTime.HasValue)
         {
             return BadRequest(new { message = "Radno vreme za ovaj dan nije dobro definisano." });
         }
+
         TimeSpan startTime = workingDay.StartTime.Value;
         TimeSpan endTime = workingDay.EndTime.Value;
         TimeSpan duration = TimeSpan.FromMinutes(service.DurationMinutes);
 
-
-        //resenje da nadjem vremenski slot za termine, neka bude na pola h?
         var slotStep = TimeSpan.FromMinutes(30);
-        var availableSlots = new List<AvailableSlotDto>();
+        var slots = new List<AvailableSlotDto>();
 
         var now = DateTime.Now;
-
         TimeSpan currSlot = startTime;
 
         while (currSlot.Add(duration) <= endTime)
         {
             TimeSpan slotEnd = currSlot.Add(duration);
+             DateTime slotDateTime = date.ToDateTime(TimeOnly.FromTimeSpan(currSlot));
 
-            var slotDateTime = date.Date + currSlot;
-
-            if (slotDateTime <= now)
-            {
-                currSlot = currSlot.Add(slotStep);
-                continue;
-            }
+            bool isPast = slotDateTime <= now;
 
             bool hasConflict = await _appointmentRepository.HasConflictAsync(
                 salonid,
-                date.Date,
+                date,
                 currSlot,
                 slotEnd
             );
 
-            if (!hasConflict)
+            bool isAvailable = !isPast && !hasConflict;
+
+            slots.Add(new AvailableSlotDto
             {
-                availableSlots.Add(new AvailableSlotDto
-                {
-                    StartTime = currSlot.ToString(@"hh\:mm"),
-                    EndTime = slotEnd.ToString(@"hh\:mm")
-                });
-            }
+                StartTime = currSlot.ToString(@"hh\:mm"),
+                EndTime = slotEnd.ToString(@"hh\:mm"),
+                IsAvailable = isAvailable
+            });
 
             currSlot = currSlot.Add(slotStep);
         }
+
         return Ok(new
         {
-            message = "Slobodni termini uspešno pronađeni.",
-            data = availableSlots
+            message = "Termini uspešno pronađeni.",
+            data = slots
         });
-
-
-
-
-
-
     }
+
+
+
+
+
     [Authorize(Roles = "Salon,Admin")]
     [HttpGet("get-appointments-by-status")]
     public async Task<IActionResult> GetAppointmentsByStatus([FromQuery] int statusId)
@@ -560,23 +564,59 @@ public class AppointmentController : ControllerBase
     }
     private async Task AutoCompletePastAppointments(List<Appointment> appointments)
     {
-        var serbiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
-        var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, serbiaTimeZone);
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
+        var currentTime = DateTime.Now.TimeOfDay;
+
+        Console.WriteLine($"CURRENT DATE: {DateTime.Now}");
+        Console.WriteLine($"TODAY: {today:yyyy-MM-dd}");
+        Console.WriteLine($"CURRENT TIME: {currentTime}");
 
         foreach (var appointment in appointments)
         {
-            var appointmentEnd = appointment.AppointmentDate.Date + appointment.EndTime;
+            if (appointment.Status != AppointmentStatus.Approved)
+                continue;
 
-            if (appointment.Status == AppointmentStatus.Approved &&
-                appointmentEnd < now)
+            var appointmentDate = appointment.AppointmentDate;
+
+            Console.WriteLine("========== AUTO COMPLETE CHECK ==========");
+            Console.WriteLine($"Appointment ID: {appointment.Id}");
+            Console.WriteLine($"Status: {appointment.Status}");
+            Console.WriteLine($"Today: {today:yyyy-MM-dd}");
+            Console.WriteLine($"Appointment date: {appointmentDate:yyyy-MM-dd}");
+            Console.WriteLine($"Start time: {appointment.StartTime}");
+            Console.WriteLine($"End time: {appointment.EndTime}");
+
+            var isPastDate = appointmentDate < today;
+            var isTodayAndFinished =
+                appointmentDate == today &&
+                appointment.EndTime <= currentTime;
+
+            Console.WriteLine($"Is past date: {isPastDate}");
+            Console.WriteLine($"Is today and finished: {isTodayAndFinished}");
+
+            if (!isPastDate && !isTodayAndFinished)
             {
-                await _appointmentRepository.UpdateStatusAsync(
-                    appointment.Id,
-                    AppointmentStatus.Completed
-                );
-
-                appointment.Status = AppointmentStatus.Completed;
+                Console.WriteLine("RESULT: Not completed");
+                Console.WriteLine("=========================================");
+                continue;
             }
+            Console.WriteLine("!!!!!!!!!! UPDATING TO COMPLETED !!!!!!!!!!");
+            Console.WriteLine($"Updating appointment ID: {appointment.Id}");
+            Console.WriteLine($"Appointment date: {appointmentDate:yyyy-MM-dd}");
+            Console.WriteLine($"End time: {appointment.EndTime}");
+            Console.WriteLine($"Today: {today:yyyy-MM-dd}");
+            Console.WriteLine($"Current time: {currentTime}");
+            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            await _appointmentRepository.UpdateStatusAsync(
+                appointment.Id,
+                AppointmentStatus.Completed
+            );
+
+            //appointment.Status = AppointmentStatus.Completed;
+
+            Console.WriteLine("RESULT: Changed to Completed");
+            Console.WriteLine("=========================================");
         }
     }
 }

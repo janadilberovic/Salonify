@@ -163,7 +163,7 @@ export default function ReviewBlock({
               {r.comment}
             </p>
           </div>
-        ))}\
+        ))}
       </div>
     </section>
   );

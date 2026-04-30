@@ -8,7 +8,7 @@ public class UserAppointmentResponseDTO
         public string? ServiceImageUrl{get; set;}
 
     public decimal Price { get; set; }
-    public DateTime AppointmentDate { get; set; }
+    public DateOnly AppointmentDate { get; set; }
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }
     public string? Note { get; set; }
