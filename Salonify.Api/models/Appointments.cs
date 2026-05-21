@@ -23,10 +23,12 @@ public class Appointment
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }
     public string? Note { get; set; }
-
+    public string ServiceName { get; set; } = string.Empty;
     // Status termina
     [BsonRepresentation(BsonType.String)]
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Pending;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public bool HasReview{get; set;}
 }

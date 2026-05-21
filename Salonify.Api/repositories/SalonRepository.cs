@@ -41,7 +41,7 @@ public class SalonRepository
     }
     public async Task<Salon?> GetBySalonIdAsync(string salonId)
     {
-                return await _salons.Find(s => s.Id == salonId).FirstOrDefaultAsync();
+        return await _salons.Find(s => s.Id == salonId).FirstOrDefaultAsync();
 
     }
     public async Task<Salon?> GetByUserIdAsync(string userId)
@@ -57,13 +57,13 @@ public class SalonRepository
             .Set(s => s.Address, updateRequest.Address)
             .Set(s => s.City, updateRequest.City)
             .Set(s => s.Phone, updateRequest.Phone);
-            
+
         await _salons.UpdateOneAsync(s => s.UserId == userId, update);
     }
-    public async Task UpdateSalonWorkingDays(string userId,UpdateSalonWorkingDaysDto dto)
+    public async Task UpdateSalonWorkingDays(string userId, UpdateSalonWorkingDaysDto dto)
     {
-        var update=Builders<Salon>.Update.Set(s => s.WorkingDays, dto.WorkingDays);
-        
+        var update = Builders<Salon>.Update.Set(s => s.WorkingDays, dto.WorkingDays);
+
         await _salons.UpdateOneAsync(s => s.UserId == userId, update);
 
     }
@@ -343,7 +343,7 @@ public class SalonRepository
     string? serviceType,
     decimal? minPrice,
     decimal? maxPrice,
-    int? day,
+    DateOnly? date,
     string? time)
     {
         if (minPrice.HasValue && maxPrice.HasValue && minPrice > maxPrice)
@@ -394,17 +394,19 @@ public class SalonRepository
             );
         }
 
-        if (day.HasValue)
+        if (date.HasValue)
         {
-            if (day < 0 || day > 6)
-                throw new ArgumentException("Dan mora biti između 0 i 6.");
+            var today = DateOnly.FromDateTime(DateTime.Now);
 
-            var selectedDay = (DayOfWeek)day.Value;
+            if (date.Value < today)
+                throw new ArgumentException("Datum ne može biti u prošlosti.");
+            //selektujem dan u nedelji da proverim rade li
+            var selectedDay = date.Value.DayOfWeek;
 
             if (!string.IsNullOrWhiteSpace(time))
             {
                 if (!TimeSpan.TryParse(time, out var targetTime))
-                    throw new ArgumentException("Neispravan format vremena. Koristi HH:mm:ss.");
+                    throw new ArgumentException("Neispravan format vremena. Koristi HH:mm ili HH:mm:ss.");
 
                 filters.Add(
                     Builders<Salon>.Filter.ElemMatch(
@@ -439,7 +441,7 @@ public class SalonRepository
         return salons.Select(s => new SalonSearchResultDto
         {
             Id = s.Id,
-            Name=s.Name,
+            Name = s.Name,
             UserId = s.UserId,
             Description = s.Description,
             Address = s.Address,
@@ -470,22 +472,22 @@ public class SalonRepository
         }).ToList();
     }
     public async Task AddGalleryImageAsync(string salonId, string imageUrl)
-{
-    var update = Builders<Salon>.Update.Push(s => s.GalleryImageUrls, imageUrl);
+    {
+        var update = Builders<Salon>.Update.Push(s => s.GalleryImageUrls, imageUrl);
 
-    await _salons.UpdateOneAsync(s => s.UserId == salonId, update);
-}
-public async Task RemoveGalleryImageAsync(string salonId, string imageUrl)
-{
-    var update = Builders<Salon>.Update.Pull(s => s.GalleryImageUrls, imageUrl);
+        await _salons.UpdateOneAsync(s => s.UserId == salonId, update);
+    }
+    public async Task RemoveGalleryImageAsync(string salonId, string imageUrl)
+    {
+        var update = Builders<Salon>.Update.Pull(s => s.GalleryImageUrls, imageUrl);
 
-    await _salons.UpdateOneAsync(s => s.Id == salonId, update);
-}
-public async Task<Salon?> GetBySlugAsync(string slug)
-{
-    return await _salons.Find(s => s.Slug == slug).FirstOrDefaultAsync();
-}
-    
+        await _salons.UpdateOneAsync(s => s.Id == salonId, update);
+    }
+    public async Task<Salon?> GetBySlugAsync(string slug)
+    {
+        return await _salons.Find(s => s.Slug == slug).FirstOrDefaultAsync();
+    }
+
 }
 
 

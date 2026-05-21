@@ -5,7 +5,7 @@ public class UserAppointmentResponseDTO
     public string SalonName { get; set; }
     public string SalonImageUrl { get; set; }
     public ServiceType ServiceType { get; set; }
-        public string? ServiceImageUrl{get; set;}
+    public string? ServiceImageUrl { get; set; }
 
     public decimal Price { get; set; }
     public DateOnly AppointmentDate { get; set; }
@@ -14,4 +14,6 @@ public class UserAppointmentResponseDTO
     public string? Note { get; set; }
     public AppointmentStatus Status { get; set; }
     public string Slug { get; set; }
+    public bool HasReviewedService { get; set; }
+    public bool CanReview { get; set; }
 }

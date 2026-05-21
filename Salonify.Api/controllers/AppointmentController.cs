@@ -13,11 +13,13 @@ public class AppointmentController : ControllerBase
     private readonly AppointmentRepository _appointmentRepository;
     private readonly SalonRepository _salonRepository;
     private readonly UserRepository _userRepository;
-    public AppointmentController(AppointmentRepository ar, SalonRepository sr, UserRepository ur)
+    private readonly ReviewRepository _reviewRepository;
+    public AppointmentController(AppointmentRepository ar, SalonRepository sr, UserRepository ur,ReviewRepository rr)
     {
         _appointmentRepository = ar;
         _salonRepository = sr;
         _userRepository = ur;
+        _reviewRepository=rr;
     }
 
     [HttpGet("get/{id}")]
@@ -98,6 +100,7 @@ public class AppointmentController : ControllerBase
             SalonId = appointmentDTO.SalonId,
             ServiceType = appointmentDTO.ServiceType,
             Price = service.Price,
+            ServiceName = service.Name,
             AppointmentDate = appointmentDTO.AppointmentDate,
             StartTime = startTime,
             EndTime = endTime,
@@ -114,7 +117,7 @@ public class AppointmentController : ControllerBase
             data = appointment
         });
     }
-
+    //dodaj has review 
     [Authorize(Roles = "User,Admin")]
     [HttpGet("appointments-user")]
     public async Task<IActionResult> GetMyAppointments()
@@ -129,6 +132,7 @@ public class AppointmentController : ControllerBase
             return Ok(new List<UserAppointmentResponseDTO>());
 
         await AutoCompletePastAppointments(appointments);
+ 
 
         var result = new List<UserAppointmentResponseDTO>();
 
@@ -138,6 +142,11 @@ public class AppointmentController : ControllerBase
             var service = salon?.Services
     .FirstOrDefault(s => s.ServiceType == appointment.ServiceType);
             Console.WriteLine(service);
+                   var hasReview = await _reviewRepository.ExistsForSalonServiceAsync(
+    userId,
+    appointment.SalonId,
+    appointment.ServiceType
+);
             result.Add(new UserAppointmentResponseDTO
             {
                 Id = appointment.Id,
@@ -155,6 +164,8 @@ public class AppointmentController : ControllerBase
                 Slug = salon != null && !string.IsNullOrWhiteSpace(salon.Slug)
     ? salon.Slug
     : appointment.SalonId,
+                CanReview=hasReview
+                
             });
         }
 

@@ -342,7 +342,7 @@ public class SalonController : ControllerBase
         [FromQuery] string? serviceType,
         [FromQuery] decimal? minPrice,
         [FromQuery] decimal? maxPrice,
-        [FromQuery] int? day,
+        [FromQuery] DateOnly? day,
         [FromQuery] string? time)
     {
         var results = await _salonRepository.SearchAsync(city, serviceType, minPrice, maxPrice, day, time);

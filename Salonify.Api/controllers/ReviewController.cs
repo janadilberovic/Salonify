@@ -29,44 +29,65 @@ public class ReviewController : ControllerBase
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized(new { error = "Nedostaje userId u tokenu." });
 
-        var salonID = reviewDto.SalonId;
-        var salon = await _salonRepository.GetBySalonIdAsync(salonID);
-        if (salon == null)
-        {
-            return BadRequest("ne postoji salon sa zadatim idjem");
-        }
-        var rating = reviewDto.Rating;
-        if (rating < 1 || rating > 5)
-        {
-            return BadRequest("Ocena mora biti u rangu 1-5");
-        }
-        var existingReview = await _reviewRepository.GetByUserAndSalon(userId, reviewDto.SalonId);
-        if (existingReview != null)
-        {
-            return BadRequest("Već ste ostavili recenziju za ovaj salon.");
-        }
-        var completedAppointment = await _appointmentRepository
-    .GetCompletedAppointmentForUserAndSalon(userId, reviewDto.SalonId);
+        if (reviewDto == null)
+            return BadRequest("Podaci za recenziju nisu validni.");
 
-        if (completedAppointment == null)
-        {
-            return BadRequest("Možete ostaviti recenziju samo za salon u kome ste imali završen termin.");
-        }
+        if (string.IsNullOrWhiteSpace(reviewDto.AppointmentId))
+            return BadRequest("Nedostaje termin za koji se ostavlja recenzija.");
+
+        if (reviewDto.Rating < 1 || reviewDto.Rating > 5)
+            return BadRequest("Ocena mora biti u rangu 1-5.");
+
         if (!string.IsNullOrWhiteSpace(reviewDto.Comment) && reviewDto.Comment.Length > 500)
-        {
             return BadRequest("Komentar ne sme biti duži od 500 karaktera.");
-        }
-        Review review = new Review
+
+        var appointment = await _appointmentRepository.GetByIdAsync(reviewDto.AppointmentId);
+
+
+        if (appointment == null)
+            return NotFound("Termin ne postoji.");
+
+        if (appointment.UserId != userId)
+            return Forbid();
+
+        if (appointment.Status != AppointmentStatus.Completed)
+            return BadRequest("Recenziju možete ostaviti samo za završen tretman.");
+
+        var salon = await _salonRepository.GetByIdAsync(appointment.SalonId);
+
+        if (salon == null)
+            return BadRequest("Salon za ovaj termin ne postoji.");
+
+        var existingReview = await _reviewRepository.ExistsForSalonServiceAsync(
+     userId,
+     appointment.SalonId,
+     appointment.ServiceType
+ );
+
+        if (existingReview)
+            return BadRequest("Već ste ostavili recenziju za ovaj tretman.");
+
+        var review = new Review
         {
             UserId = userId,
-            SalonId = reviewDto.SalonId,
+            SalonId = appointment.SalonId,
+            AppointmentId = appointment.Id,
+            ServiceName = appointment.ServiceName,
             Comment = reviewDto.Comment,
             CreatedAt = DateTime.UtcNow,
-            ServiceType=reviewDto.ServiceType,
+            ServiceType = appointment.ServiceType,
             Rating = reviewDto.Rating
         };
+
         await _reviewRepository.CreateReview(review);
-        return Ok();
+
+
+
+        return Ok(new
+        {
+            message = "Recenzija je uspešno dodata.",
+            review
+        });
     }
     [Authorize(Roles = "Admin")]
     [HttpDelete("delete-review/{reviewId}")]
@@ -80,12 +101,12 @@ public class ReviewController : ControllerBase
         await _reviewRepository.DeleteReviewAsync(reviewId);
         return NoContent();
     }
-   
+
     [HttpGet("get-reviews-for-salon")]
-    public async Task<IActionResult> GetReviewsForSalon([FromQuery]string salonId)
+    public async Task<IActionResult> GetReviewsForSalon([FromQuery] string salonId)
     {
-       
-        var salon= await _salonRepository.GetByIdAsync(salonId);
+
+        var salon = await _salonRepository.GetByIdAsync(salonId);
         if (salon == null)
         {
             return NotFound("salon ne postoji");
@@ -132,4 +153,20 @@ public class ReviewController : ControllerBase
         var num = await _reviewRepository.GetReviewCountForSalon(salonId);
         return Ok(num);
     }
+
+    [HttpGet("salon/{salonId}/search")]
+    public async Task<IActionResult> SearchReviewsForSalon(
+     string salonId,
+     [FromQuery] ReviewSearchQuery query)
+    {
+        var reviews = await _reviewRepository.SearchForSalonAsync(
+            salonId,
+            query.MinRating,
+            query.ServiceType,
+            query.SortBy
+        );
+
+        return Ok(reviews);
+    }
+
 }

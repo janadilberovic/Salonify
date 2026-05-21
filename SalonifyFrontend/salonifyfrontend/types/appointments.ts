@@ -35,6 +35,8 @@ export type UserAppointment = {
   note?: string;
   status: AppointmentStatus;
   slug:string;
+  serviceName: string;
+  canReview:boolean;
 };
 export type AvailableSlot = {
   startTime: string;

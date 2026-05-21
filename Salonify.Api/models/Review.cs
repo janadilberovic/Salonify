@@ -14,8 +14,11 @@ public class Review
     // Salon koji se ocenjuje (User sa Role = Salon)
     [BsonRepresentation(BsonType.ObjectId)]
     public string SalonId { get; set; }
+     // Termin/tretman za koji je ostavljena recenzija
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string AppointmentId { get; set; } = string.Empty;
 
-
+    public string ServiceName { get; set; } = string.Empty;
     // Ocena (1–5)
     public int Rating { get; set; }
 

@@ -19,12 +19,17 @@ import ReviewBlock from "./ReviewBlock";
 import { getSalonBySlugOrId } from "../../../services/salon";
 export default async function SalonPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{
+    reviewAppointmentId?: string;
+    service?: string;
+  }>;
 }) {
   const { slug } = await params;
-  
-  
+  const { reviewAppointmentId, service } = await searchParams;
+
   let salon;
 
   try {
@@ -33,27 +38,27 @@ export default async function SalonPage({
     notFound();
   }
   const averageRating = await getAverageReviewsForSalon(salon.id);
-  const reviews =await getReviewsForSalon(salon.id);
+  const reviews = await getReviewsForSalon(salon.id);
   /* ovde idu preporuceni const related = SALONS.filter(
     (s) =>
       s.id !== salon.id &&
       s.categories.some((c) => salon.categories.includes(c)),
-  ).slice(0, 3);*/ 
+  ).slice(0, 3);*/
   function getDayName(day: number) {
-  const days = [
-    "Nedelja",
-    "Ponedeljak",
-    "Utorak",
-    "Sreda",
-    "Četvrtak",
-    "Petak",
-    "Subota",
-  ];
+    const days = [
+      "Nedelja",
+      "Ponedeljak",
+      "Utorak",
+      "Sreda",
+      "Četvrtak",
+      "Petak",
+      "Subota",
+    ];
 
-  return days[day] ?? "Nepoznato";
-}
- 
-const openStatus = getSalonOpenStatus(salon.openingHours);
+    return days[day] ?? "Nepoznato";
+  }
+
+  const openStatus = getSalonOpenStatus(salon.openingHours);
 
   return (
     <>
@@ -168,20 +173,20 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
                 <ClockIcon width={16} height={16} className="text-primary" />
                 Radni dani
               </span>
-             <span
-  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 h-6 rounded-full ${
-    openStatus.isOpen
-      ? "text-[#2f6a51] bg-success-soft"
-      : "text-[#8a3948] bg-danger-soft"
-  }`}
->
-  <span
-    className={`size-1.5 rounded-full ${
-      openStatus.isOpen ? "bg-[#2f6a51]" : "bg-[#8a3948]"
-    }`}
-  />
-  {openStatus.label}
-</span>
+              <span
+                className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 h-6 rounded-full ${
+                  openStatus.isOpen
+                    ? "text-[#2f6a51] bg-success-soft"
+                    : "text-[#8a3948] bg-danger-soft"
+                }`}
+              >
+                <span
+                  className={`size-1.5 rounded-full ${
+                    openStatus.isOpen ? "bg-[#2f6a51]" : "bg-[#8a3948]"
+                  }`}
+                />
+                {openStatus.label}
+              </span>
             </div>
             <ul className="divide-y divide-[var(--border)]">
               {salon.openingHours.map((h) => (
@@ -189,7 +194,9 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
                   key={h.day}
                   className="flex items-center justify-between py-2.5 text-sm"
                 >
-                  <span className="text-foreground/80">{getDayName(Number(h.day))}</span>
+                  <span className="text-foreground/80">
+                    {getDayName(Number(h.day))}
+                  </span>
                   <span
                     className={`${h.closed ? "text-muted-soft" : "font-medium"}`}
                   >
@@ -268,13 +275,16 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
           <div>
             <EyebrowLabel>Iskustva klijenata</EyebrowLabel>
             <h2 className="font-display mt-3 text-3xl sm:text-4xl font-semibold tracking-tight">
-Šta drugi kažu o nama            </h2>
+              Šta drugi kažu o nama{" "}
+            </h2>
           </div>
         </div>
         <ReviewBlock
           reviews={reviews}
           rating={averageRating ?? 0}
           count={reviews.length}
+          reviewAppointmentId={reviewAppointmentId}
+          reviewServiceName={service}
         />
       </section>
 
@@ -307,9 +317,11 @@ const openStatus = getSalonOpenStatus(salon.openingHours);
 }
 
 import type { Salon } from "../../lib/data";
-import { getAverageReviewsForSalon, getReviewsForSalon } from "@/services/reviews";
+import {
+  getAverageReviewsForSalon,
+  getReviewsForSalon,
+} from "@/services/reviews";
 function RelatedCard({ salon }: { salon: Salon }) {
-
   return (
     <Link
       href={`/salons/${salon.id}`}
@@ -349,7 +361,7 @@ function getSalonOpenStatus(
 ) {
   const now = new Date();
   const todayNumber = now.getDay(); // 0 = Sunday, 1 = Monday, itd.
-  
+
   // Mapiramo dnevne vrednosti na razne formate koje može poslati API
   const dayMaps = [
     { num: 0, en: "Sun", sr: "Nedelja" },
@@ -362,15 +374,21 @@ function getSalonOpenStatus(
   ];
 
   const todayMap = dayMaps[todayNumber];
-  
+
   // Pokusavamo da pronađemo dan u raznim formatima
-  const today = openingHours.find((h) => 
-    h.day === todayMap?.en || 
-    h.day === todayMap?.sr || 
-    h.day === String(todayNumber)
+  const today = openingHours.find(
+    (h) =>
+      h.day === todayMap?.en ||
+      h.day === todayMap?.sr ||
+      h.day === String(todayNumber),
   );
 
-  if (!today || today.closed || today.hours === "Zatvoreno" || today.hours === "Closed") {
+  if (
+    !today ||
+    today.closed ||
+    today.hours === "Zatvoreno" ||
+    today.hours === "Closed"
+  ) {
     return {
       isOpen: false,
       label: "Sada zatvoreno",
@@ -378,9 +396,9 @@ function getSalonOpenStatus(
   }
 
   // Parsiramo vreme - rukujemo sa " - " ili "-" separatorima
-  const timeParts = today.hours.includes(" - ") 
+  const timeParts = today.hours.includes(" - ")
     ? today.hours.split(" - ")
-    : today.hours.split("-").map(t => t.trim());
+    : today.hours.split("-").map((t) => t.trim());
 
   if (timeParts.length < 2) {
     return {

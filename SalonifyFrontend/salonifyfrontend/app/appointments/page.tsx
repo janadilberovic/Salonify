@@ -71,7 +71,9 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
   Other: "Ostalo",
 };
 
-function normalizeStatus(status: AppointmentStatus | number): AppointmentStatus {
+function normalizeStatus(
+  status: AppointmentStatus | number,
+): AppointmentStatus {
   if (typeof status === "number") {
     return STATUS_MAP[status] ?? "Pending";
   }
@@ -360,17 +362,24 @@ function AppointmentRow({
               <XIcon width={14} height={14} />
               {isCanceling ? "Otkazivanje..." : "Otkaži"}
             </Button>
-          ) : a.status === "Completed" ? (
+          ) : a.status === "Completed" && !a.canReview ? (
             <LinkButton
-              href={`/salons/${a.slug}#reviews`}
+              href={`/salons/${a.slug}?reviewAppointmentId=${a.id}&service=${encodeURIComponent(
+                serviceLabel(a.serviceName ?? a.serviceType),
+              )}#reviews`}
               variant="soft"
               size="sm"
             >
               <SparkleIcon width={14} height={14} />
               Ostavi recenziju
             </LinkButton>
+          ) : a.status === "Completed" && a.canReview ? (
+            <LinkButton href={`/salons/${a.slug}`} variant="soft" size="sm">
+              <HeartIcon width={14} height={14} />
+              Recenzija ostavljena
+            </LinkButton>
           ) : (
-            <LinkButton href={`/salons/${a.salonId}`} variant="soft" size="sm">
+            <LinkButton href={`/salons/${a.slug}`} variant="soft" size="sm">
               <HeartIcon width={14} height={14} />
               Zakaži opet
             </LinkButton>

@@ -40,6 +40,6 @@ export type SalonSearchParams = {
   serviceType?: string | null;
   minPrice?: number | null;
   maxPrice?: number | null;
-  day?: number | null;
+  date?: string | null;
   time?: string | null;
 };

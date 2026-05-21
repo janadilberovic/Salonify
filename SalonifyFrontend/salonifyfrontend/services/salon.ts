@@ -67,7 +67,7 @@ export async function searchSalons(params: SalonSearchParams) {
   if (params.serviceType) query.append("serviceType", params.serviceType);
   if (params.minPrice != null) query.append("minPrice", String(params.minPrice));
   if (params.maxPrice != null) query.append("maxPrice", String(params.maxPrice));
-  if (params.day != null) query.append("day", String(params.day));
+  if (params.date) query.append("date", params.date);
   if (params.time) query.append("time", params.time);
 
   const data = await apiFetch<any>(`/api/salon/search?${query.toString()}`);

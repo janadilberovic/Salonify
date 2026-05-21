@@ -5,16 +5,14 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SalonCard from "../components/SalonCard";
 import { EyebrowLabel } from "../components/ui";
-import {
-  SearchIcon,
-  MapPinIcon,
-  SparkleIcon,
-} from "../components/Icons";
+import { SearchIcon, MapPinIcon, SparkleIcon } from "../components/Icons";
 import { searchSalons, getAllSalons } from "@/services/salon";
+import PrettyDatePicker from "../components/PrettyDatePicker";
+import PrettyTimePicker from "../components/PrettyTimePicker";
+import PrettyCitySelect from "../components/PrettyCitySelect";
 
 const SORTS = ["Najpopularnije", "Najbolje ocenjeni", "Najnoviji"];
 
-// ServiceType ENUM vrednosti
 const SERVICE_TYPES = [
   { value: "Haircut", label: "Šišanje" },
   { value: "Coloring", label: "Farbanje" },
@@ -30,44 +28,48 @@ const SERVICE_TYPES = [
   { value: "Other", label: "Ostalo" },
 ];
 
-const DAYS = [
-  { value: 0, label: "Nedelja" },
-  { value: 1, label: "Ponedeljak" },
-  { value: 2, label: "Utorak" },
-  { value: 3, label: "Sreda" },
-  { value: 4, label: "Četvrtak" },
-  { value: 5, label: "Petak" },
-  { value: 6, label: "Subota" },
-];
+function getTodayDateOnlyString() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 export default function SalonsPage() {
   const [salons, setSalons] = useState<any[]>([]);
   const [filteredSalons, setFilteredSalons] = useState<any[]>([]);
+
   const [query, setQuery] = useState("");
   const [city, setCity] = useState<string | null>(null);
   const [serviceType, setServiceType] = useState<string | null>(null);
+
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
-  const [day, setDay] = useState<number | null>(null);
+  const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
+
   const [sort, setSort] = useState(SORTS[0]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [openNow, setOpenNow] = useState(false);
 
-  // Učitaj sve salone na početku
   useEffect(() => {
     loadAllSalons();
   }, []);
 
-  // Pretraži salone kada se filteri promene
   useEffect(() => {
     performSearch();
-  }, [city, serviceType, minPrice, maxPrice, day, time]);
+  }, [city, serviceType, minPrice, maxPrice, date, time]);
 
   async function loadAllSalons() {
     try {
       setLoading(true);
+
       const data = await getAllSalons();
+
       setSalons(data);
       setFilteredSalons(data);
     } catch (error) {
@@ -83,24 +85,25 @@ export default function SalonsPage() {
       !serviceType &&
       minPrice === null &&
       maxPrice === null &&
-      day === null &&
+      date === null &&
       time === null
     ) {
-      // Nema aktivnih filtrera, prikaži sve
       setFilteredSalons(salons);
       return;
     }
 
     try {
       setSearching(true);
+
       const results = await searchSalons({
         city: city || undefined,
         serviceType: serviceType || undefined,
         minPrice: minPrice !== null ? minPrice : undefined,
         maxPrice: maxPrice !== null ? maxPrice : undefined,
-        day: day !== null ? day : undefined,
+        date: date || undefined,
         time: time || undefined,
       });
+
       setFilteredSalons(results);
     } catch (error) {
       console.error("Greška pri pretrazi:", error);
@@ -110,23 +113,33 @@ export default function SalonsPage() {
     }
   }
 
+  function clearFilters() {
+    setCity(null);
+    setServiceType(null);
+    setMinPrice(null);
+    setMaxPrice(null);
+    setDate(null);
+    setOpenNow(false);
+    setTime(null);
+  }
+
   const cities = useMemo(() => {
     return Array.from(
-      new Set(salons.map((s) => s.city).filter(Boolean))
+      new Set(salons.map((s) => s.city).filter(Boolean)),
     ).sort();
   }, [salons]);
 
   const sorted = useMemo(() => {
     let list = [...filteredSalons];
 
-    // Globalna pretraga po query
     if (query.trim()) {
       const q = query.trim().toLowerCase();
+
       list = list.filter(
         (s) =>
           s.name?.toLowerCase().includes(q) ||
           s.city?.toLowerCase().includes(q) ||
-          s.description?.toLowerCase().includes(q)
+          s.description?.toLowerCase().includes(q),
       );
     }
 
@@ -146,15 +159,22 @@ export default function SalonsPage() {
     serviceType ||
     minPrice !== null ||
     maxPrice !== null ||
-    day !== null ||
+    date !== null ||
     time !== null;
+
+  const activeMoreFiltersCount = [
+    minPrice !== null,
+    maxPrice !== null,
+    date !== null,
+    time !== null,
+  ].filter(Boolean).length;
 
   return (
     <>
       <Navbar />
 
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 pt-10 lg:pt-14">
-        <div className="relative overflow-hidden rounded-[2.5rem] p-8 sm:p-12 bg-gradient-to-br from-white via-[#fdf0f7] to-[#f4e6f7] border border-white/80 shadow-softer">
+      <section className="relative z-30 mx-auto max-w-7xl px-6 lg:px-10 pt-10 lg:pt-14">
+        <div className="relative  rounded-[2.5rem] p-8 sm:p-12 bg-gradient-to-br from-white via-[#fdf0f7] to-[#f4e6f7] border border-white/80 shadow-softer">
           <div className="absolute -top-16 -right-16 size-64 rounded-full bg-primary-soft blur-3xl" />
           <div className="absolute -bottom-20 -left-20 size-64 rounded-full bg-accent-soft blur-3xl" />
 
@@ -167,7 +187,8 @@ export default function SalonsPage() {
             </h1>
 
             <p className="mt-3 text-muted max-w-xl">
-              Pretraži salone po nazivu, gradu, uslugi, ceni i slobodnom vremenu.
+              Pretraži salone po nazivu, gradu, usluzi, ceni i slobodnom
+              vremenu.
             </p>
 
             {/* SEARCH BAR */}
@@ -186,150 +207,208 @@ export default function SalonsPage() {
               <div className="h-px md:h-auto md:w-px bg-[var(--border)]" />
 
               <div className="flex items-center gap-2 flex-1 px-4">
-                <MapPinIcon className="text-primary shrink-0" />
-
-                <select
-                  value={city ?? ""}
-                  onChange={(e) => setCity(e.target.value || null)}
-                  className="flex-1 bg-transparent h-12 outline-none text-sm"
-                >
-                  <option value="">Svi gradovi</option>
-                  {cities.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+               
+                <PrettyCitySelect
+                  value={city}
+                  cities={cities}
+                  onChange={setCity}
+                />
               </div>
             </div>
 
-            {/* ADVANCED FILTERS */}
-            <div className="mt-5 space-y-4">
-              {/* Tip usluge */}
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 block">
+            {/* FILTERS */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Tip usluge
                 </label>
-                <div className="flex flex-wrap gap-2">
+
+                <div className="flex items-center gap-2">
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="hidden sm:inline-flex text-xs font-semibold px-4 py-2 rounded-full border border-[var(--border)] bg-white text-muted transition hover:border-primary hover:text-primary"
+                    >
+                      Obriši filtere
+                    </button>
+                  )}
                   <button
-                    onClick={() => setServiceType(null)}
+  type="button"
+  onClick={() => {
+    const nextValue = !openNow;
+
+    setOpenNow(nextValue);
+
+    if (nextValue) {
+      setDate(getTodayDateOnlyString());
+      setTime(getCurrentTimeString());
+    } else {
+      setDate(null);
+      setTime(null);
+    }
+  }}
+  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold shadow-sm transition ${
+    openNow
+      ? "bg-primary text-white border-primary"
+      : "bg-white text-muted border-[var(--border)] hover:border-primary hover:text-primary"
+  }`}
+>
+  <span
+    className={`size-2 rounded-full ${
+      openNow ? "bg-white" : "bg-green-500"
+    }`}
+  />
+  Otvoreno sada
+</button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowMoreFilters((prev) => !prev)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-white px-4 py-2 text-xs font-semibold text-muted shadow-sm transition hover:border-primary hover:text-primary"
+                  >
+                    Još filtera
+                    {activeMoreFiltersCount > 0 && (
+                      <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-[10px] text-white">
+                        {activeMoreFiltersCount}
+                      </span>
+                    )}
+                    <span
+                      className={`text-sm transition-transform ${
+                        showMoreFilters ? "rotate-180" : ""
+                      }`}
+                    >
+                      ↓
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* SERVICE CHIPS */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setServiceType(null)}
+                  className={`text-xs font-medium px-3.5 py-2 rounded-full border transition ${
+                    !serviceType
+                      ? "bg-primary text-white border-primary shadow-soft"
+                      : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  Sve usluge
+                </button>
+
+                {SERVICE_TYPES.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() =>
+                      setServiceType(s.value === serviceType ? null : s.value)
+                    }
                     className={`text-xs font-medium px-3.5 py-2 rounded-full border transition ${
-                      !serviceType
+                      serviceType === s.value
                         ? "bg-primary text-white border-primary shadow-soft"
                         : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
                     }`}
                   >
-                    Sve usluge
+                    {s.label}
                   </button>
-
-                  {SERVICE_TYPES.map((s) => (
-                    <button
-                      key={s.value}
-                      onClick={() =>
-                        setServiceType(
-                          s.value === serviceType ? null : s.value
-                        )
-                      }
-                      className={`text-xs font-medium px-3.5 py-2 rounded-full border transition ${
-                        serviceType === s.value
-                          ? "bg-primary text-white border-primary shadow-soft"
-                          : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
+                ))}
               </div>
 
-              {/* Cena */}
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 block">
-                    Min cena (RSD)
-                  </label>
-                  <input
-                    type="number"
-                    value={minPrice ?? ""}
-                    onChange={(e) =>
-                      setMinPrice(e.target.value ? Number(e.target.value) : null)
-                    }
-                    placeholder="Min"
-                    className="w-full h-10 px-3 rounded-lg border border-[var(--border)] outline-none focus:border-primary text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 block">
-                    Max cena (RSD)
-                  </label>
-                  <input
-                    type="number"
-                    value={maxPrice ?? ""}
-                    onChange={(e) =>
-                      setMaxPrice(e.target.value ? Number(e.target.value) : null)
-                    }
-                    placeholder="Max"
-                    className="w-full h-10 px-3 rounded-lg border border-[var(--border)] outline-none focus:border-primary text-sm"
-                  />
-                </div>
-              </div>
+              {/* MORE FILTERS DROPDOWN */}
+              {showMoreFilters && (
+                <div className="mt-5 rounded-[2rem] border border-white/80 bg-white/75 p-5 shadow-soft backdrop-blur">
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 block">
+                        Min cena
+                      </label>
 
-              {/* Slobodan termin */}
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 block">
-                    Dan
-                  </label>
-                  <select
-                    value={day ?? ""}
-                    onChange={(e) =>
-                      setDay(e.target.value ? Number(e.target.value) : null)
-                    }
-                    className="w-full h-10 px-3 rounded-lg border border-[var(--border)] outline-none focus:border-primary text-sm"
-                  >
-                    <option value="">Bilo koji dan</option>
-                    {DAYS.map((d) => (
-                      <option key={d.value} value={d.value}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 block">
-                    Vreme (HH:mm)
-                  </label>
-                  <input
-                    type="time"
-                    value={time ?? ""}
-                    onChange={(e) => setTime(e.target.value || null)}
-                    className="w-full h-10 px-3 rounded-lg border border-[var(--border)] outline-none focus:border-primary text-sm"
-                  />
-                </div>
-              </div>
+                      <input
+                        type="number"
+                        value={minPrice ?? ""}
+                        onChange={(e) =>
+                          setMinPrice(
+                            e.target.value ? Number(e.target.value) : null,
+                          )
+                        }
+                        placeholder="npr. 1000"
+                        className="w-full h-11 px-4 rounded-2xl bg-white border border-[var(--border)] outline-none focus:border-primary text-sm"
+                      />
+                    </div>
 
-              {/* Reset button */}
-              {hasActiveFilters && (
-                <button
-                  onClick={() => {
-                    setCity(null);
-                    setServiceType(null);
-                    setMinPrice(null);
-                    setMaxPrice(null);
-                    setDay(null);
-                    setTime(null);
-                  }}
-                  className="text-xs font-medium px-3.5 py-2 rounded-full border border-[var(--border)] hover:border-primary hover:text-primary transition text-muted hover:text-primary"
-                >
-                  Obriši sve filtere
-                </button>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 block">
+                        Max cena
+                      </label>
+
+                      <input
+                        type="number"
+                        value={maxPrice ?? ""}
+                        onChange={(e) =>
+                          setMaxPrice(
+                            e.target.value ? Number(e.target.value) : null,
+                          )
+                        }
+                        placeholder="npr. 5000"
+                        className="w-full h-11 px-4 rounded-2xl bg-white border border-[var(--border)] outline-none focus:border-primary text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 block">
+                        Datum
+                      </label>
+
+                      <PrettyDatePicker
+                        value={date ?? ""}
+                          onChange={(value) => {
+    setDate(value || null);
+    setOpenNow(false);
+  }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 block">
+                        Vreme
+                      </label>
+
+                      <PrettyTimePicker
+                        value={time ?? ""}
+                       onChange={(value) => {
+    setTime(value || null);
+    setOpenNow(false);
+  }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <p className="text-xs text-muted">
+                      Izaberi datum i vreme samo ako želiš da vidiš salone koji
+                      rade u tom terminu.
+                    </p>
+
+                    {hasActiveFilters && (
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="sm:hidden text-xs font-semibold px-4 py-2 rounded-full border border-[var(--border)] bg-white text-muted transition hover:border-primary hover:text-primary"
+                      >
+                        Obriši filtere
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-10">
+      <section className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10 mt-10">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <p className="text-sm text-muted">
             Pronađeno{" "}
@@ -343,6 +422,7 @@ export default function SalonsPage() {
             {SORTS.map((s) => (
               <button
                 key={s}
+                type="button"
                 onClick={() => setSort(s)}
                 className={`text-xs font-medium px-3.5 py-2 rounded-full border transition ${
                   sort === s
@@ -427,4 +507,14 @@ function EmptyState() {
       </p>
     </div>
   );
+}
+
+
+function getCurrentTimeString() {
+  const now = new Date();
+
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
 }
