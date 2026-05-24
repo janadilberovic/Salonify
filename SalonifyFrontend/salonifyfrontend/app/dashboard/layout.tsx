@@ -14,6 +14,7 @@ import {
   ScissorsIcon,
   SettingsIcon,
   UserIcon,
+  StarIcon,
 } from "../components/Icons";
 
 import { useMySalon } from "@/hooks/salon/UseMySalon";
@@ -21,6 +22,7 @@ import { useMySalon } from "@/hooks/salon/UseMySalon";
 const SECTIONS = [
   { href: "/dashboard", label: "Pregled", icon: DashboardIcon },
   { href: "/dashboard/appointments", label: "Termini", icon: CalendarIcon },
+  
   { href: "/dashboard/services", label: "Usluge", icon: ScissorsIcon },
   { href: "/dashboard/hours", label: "Radno vreme", icon: ClockIcon },
   { href: "/dashboard/profile", label: "Profil salona", icon: UserIcon },

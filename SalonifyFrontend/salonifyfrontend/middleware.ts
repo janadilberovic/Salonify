@@ -9,7 +9,8 @@ export function middleware(request: NextRequest) {
   // ako nije ulogovan
   if (
     (pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/appointments")) &&
+      pathname.startsWith("/appointments") ||
+      pathname.startsWith("/dashboard/reviews")) &&
     !token
   ) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -29,9 +30,16 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // dashboard/reviews samo salon/admin
+  if (pathname.startsWith("/dashboard/reviews")) {
+    if (role !== "Salon" && role !== "Admin") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/appointments/:path*"],
+  matcher: ["/dashboard/:path*", "/appointments/:path*", "/dashboard/reviews/:path*"],
 };

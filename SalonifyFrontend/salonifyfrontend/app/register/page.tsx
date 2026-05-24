@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import AuthShell from "../components/AuthShell";
 import { Button, Input, Label } from "../components/ui";
 import {
@@ -13,6 +14,8 @@ import {
 import { useRegister } from "@/hooks/useRegister";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
   const [role, setRole] = useState<"user" | "salon">("user");
 
   const [firstName, setFirstName] = useState("");
@@ -26,6 +29,28 @@ export default function RegisterPage() {
   const [passwordError, setPasswordError] = useState("");
 
   const { register, loading, error } = useRegister();
+
+  useEffect(() => {
+    // Ako je korisnik već prijavljen, redirekciju ga
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (token && role) {
+      if (role === "Salon") {
+        router.push("/dashboard");
+      } else if (role === "Admin") {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
+    } else {
+      setIsReady(true);
+    }
+  }, [router]);
+
+  if (!isReady) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

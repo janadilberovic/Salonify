@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AuthShell from "../components/AuthShell";
 import { Button, Input, Label } from "../components/ui";
@@ -17,12 +17,35 @@ type LoginResponse = {
 
 export default function LoginPage() {
   const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    // Ako je korisnik već prijavljen, redirekciju ga
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (token && role) {
+      if (role === "Salon") {
+        router.push("/dashboard");
+      } else if (role === "Admin") {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
+    } else {
+      setIsReady(true);
+    }
+  }, [router]);
+
+  if (!isReady) {
+    return null;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,10 +65,11 @@ export default function LoginPage() {
       localStorage.setItem("token", response.token);
       localStorage.setItem("role", response.role);
       localStorage.setItem("displayName", response.displayName);
-      localStorage.setItem("id", response.userId);
+      localStorage.setItem("userId", response.userId);
   
-      document.cookie = `token=${response.token}; path=/`;
-      document.cookie = `role=${response.role}; path=/`;
+      // Setuj cookies sa options za SSR
+      document.cookie = `token=${response.token}; path=/; max-age=${60 * 60 * 24 * 30}`; // 30 days
+      document.cookie = `role=${response.role}; path=/; max-age=${60 * 60 * 24 * 30}`;
 
       if (response.role === "Salon") {
         router.push("/dashboard");

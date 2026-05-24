@@ -18,7 +18,7 @@ export default function Navbar() {
 
   useEffect(() => {
     setRole(localStorage.getItem("role"));
-    setName(localStorage.getItem("Name"));
+    setName(localStorage.getItem("displayName") || localStorage.getItem("Name"));
   }, []);
   useEffect(() => {
     getUpcomingAppointmentsForUser()
@@ -31,18 +31,27 @@ export default function Navbar() {
   const isAdmin = role === "Admin";
 
   const NAV = [
-    { href: "/salons", label: "Saloni", show: true },
+    { href: "/salons", label: "Saloni", show: isSalon || isUser || isAdmin },
 
     { href: "/appointments", label: "Moji termini", show: isUser },
 
-    { href: "/dashboard", label: "Salon dashboard", show: isSalon || isAdmin },
+    { href: "/dashboard", label: "Dashboard", show: isSalon || isAdmin },
 
-    { href: "/reviews", label: "Recenzije", show: true },
+    { href: "/reviews", label: "Recenzije", show: isSalon || isAdmin },
+
+    { href: "/recommended", label: "Preporučeno", show: isUser },
   ].filter((item) => item.show);
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("name");
+    localStorage.removeItem("displayName");
+    localStorage.removeItem("Name");
+    localStorage.removeItem("id");
+    localStorage.removeItem("userId");
+
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
 
     setRole(null);
     setName(null);

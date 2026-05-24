@@ -40,6 +40,7 @@ function getTodayDateOnlyString() {
 export default function SalonsPage() {
   const [salons, setSalons] = useState<any[]>([]);
   const [filteredSalons, setFilteredSalons] = useState<any[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const [query, setQuery] = useState("");
   const [city, setCity] = useState<string | null>(null);
@@ -57,12 +58,26 @@ export default function SalonsPage() {
   const [openNow, setOpenNow] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token);
     loadAllSalons();
   }, []);
 
   useEffect(() => {
+    // Ako korisnik nije prijavljen i pokušava da koristi filtere (osim city i query), zabrani
+    if (!isLoggedIn && (serviceType || minPrice !== null || maxPrice !== null || date !== null || time !== null)) {
+      // Resetuj filtere
+      setServiceType(null);
+      setMinPrice(null);
+      setMaxPrice(null);
+      setDate(null);
+      setTime(null);
+      setOpenNow(false);
+      return;
+    }
+
     performSearch();
-  }, [city, serviceType, minPrice, maxPrice, date, time]);
+  }, [city, serviceType, minPrice, maxPrice, date, time, openNow, isLoggedIn]);
 
   async function loadAllSalons() {
     try {
@@ -86,7 +101,8 @@ export default function SalonsPage() {
       minPrice === null &&
       maxPrice === null &&
       date === null &&
-      time === null
+      time === null &&
+      !openNow
     ) {
       setFilteredSalons(salons);
       return;
@@ -104,7 +120,55 @@ export default function SalonsPage() {
         time: time || undefined,
       });
 
-      setFilteredSalons(results);
+      // Filtriranje po "Otvoreno sada" na frontend-u jer API to ne podržava
+      let filtered = results;
+      if (openNow) {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const currentTime = currentHour * 60 + currentMinute;
+
+        filtered = results.filter((salon) => {
+          if (!salon.openingHours || salon.openingHours.length === 0) {
+            return false;
+          }
+
+          const dayOfWeek = now.getDay();
+          // Map JS day (0=Sunday) to API format
+          const dayMap = [0, 1, 2, 3, 4, 5, 6];
+          const apiDay = dayMap[dayOfWeek];
+
+          const todayHours = salon.openingHours.find(
+            (h) =>
+              Number(h.day) === apiDay ||
+              h.day === String(apiDay) ||
+              (dayOfWeek === 0 && h.day === "0")
+          );
+
+          if (!todayHours || todayHours.closed) {
+            return false;
+          }
+
+          // Parse hours (format: "09:00 - 17:00" or "09:00-17:00")
+          const timeParts = todayHours.hours.includes(" - ")
+            ? todayHours.hours.split(" - ")
+            : todayHours.hours.split("-").map((t) => t.trim());
+
+          if (timeParts.length < 2) {
+            return false;
+          }
+
+          const [startHour, startMinute] = timeParts[0].split(":").map(Number);
+          const [endHour, endMinute] = timeParts[1].split(":").map(Number);
+
+          const startTime = startHour * 60 + startMinute;
+          const endTime = endHour * 60 + endMinute;
+
+          return currentTime >= startTime && currentTime < endTime;
+        });
+      }
+
+      setFilteredSalons(filtered);
     } catch (error) {
       console.error("Greška pri pretrazi:", error);
       setFilteredSalons([]);
@@ -160,7 +224,8 @@ export default function SalonsPage() {
     minPrice !== null ||
     maxPrice !== null ||
     date !== null ||
-    time !== null;
+    time !== null ||
+    openNow;
 
   const activeMoreFiltersCount = [
     minPrice !== null,
@@ -218,6 +283,13 @@ export default function SalonsPage() {
 
             {/* FILTERS */}
             <div className="mt-6">
+              {!isLoggedIn && (
+                <div className="mb-4 rounded-2xl bg-yellow-50 border border-yellow-200 p-4 text-sm text-yellow-700">
+                  <p className="font-semibold mb-1">Prijavite se da koristite napredne filtere</p>
+                  <p>Možete pretraživati po gradu, ali za korišćenje ostalih filtere (datum, vreme, cena, usluga), morate biti prijavljeni.</p>
+                </div>
+              )}
+
               <div className="flex items-center justify-between gap-4 mb-3">
                 <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                   Tip usluge
@@ -236,6 +308,7 @@ export default function SalonsPage() {
                   <button
   type="button"
   onClick={() => {
+    if (!isLoggedIn) return;
     const nextValue = !openNow;
 
     setOpenNow(nextValue);
@@ -248,11 +321,15 @@ export default function SalonsPage() {
       setTime(null);
     }
   }}
+  disabled={!isLoggedIn}
   className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold shadow-sm transition ${
-    openNow
-      ? "bg-primary text-white border-primary"
-      : "bg-white text-muted border-[var(--border)] hover:border-primary hover:text-primary"
+    !isLoggedIn
+      ? "opacity-50 cursor-not-allowed bg-gray-100 border-gray-300 text-gray-500"
+      : openNow
+        ? "bg-primary text-white border-primary"
+        : "bg-white text-muted border-[var(--border)] hover:border-primary hover:text-primary"
   }`}
+  title={!isLoggedIn ? "Prijavite se da koristite ovaj filter" : ""}
 >
   <span
     className={`size-2 rounded-full ${
@@ -264,8 +341,17 @@ export default function SalonsPage() {
 
                   <button
                     type="button"
-                    onClick={() => setShowMoreFilters((prev) => !prev)}
-                    className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-white px-4 py-2 text-xs font-semibold text-muted shadow-sm transition hover:border-primary hover:text-primary"
+                    onClick={() => {
+                      if (!isLoggedIn) return;
+                      setShowMoreFilters((prev) => !prev);
+                    }}
+                    disabled={!isLoggedIn}
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold shadow-sm transition ${
+                      !isLoggedIn
+                        ? "opacity-50 cursor-not-allowed bg-gray-100 border-gray-300 text-gray-500"
+                        : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
+                    }`}
+                    title={!isLoggedIn ? "Prijavite se da koristite ovaj filter" : ""}
                   >
                     Još filtera
                     {activeMoreFiltersCount > 0 && (
@@ -288,12 +374,19 @@ export default function SalonsPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setServiceType(null)}
+                  onClick={() => {
+                    if (!isLoggedIn) return;
+                    setServiceType(null);
+                  }}
+                  disabled={!isLoggedIn}
                   className={`text-xs font-medium px-3.5 py-2 rounded-full border transition ${
-                    !serviceType
-                      ? "bg-primary text-white border-primary shadow-soft"
-                      : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
+                    !isLoggedIn
+                      ? "opacity-50 cursor-not-allowed bg-gray-100 border-gray-300 text-gray-500"
+                      : !serviceType
+                        ? "bg-primary text-white border-primary shadow-soft"
+                        : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
                   }`}
+                  title={!isLoggedIn ? "Prijavite se da koristite ovaj filter" : ""}
                 >
                   Sve usluge
                 </button>
@@ -302,14 +395,19 @@ export default function SalonsPage() {
                   <button
                     key={s.value}
                     type="button"
-                    onClick={() =>
-                      setServiceType(s.value === serviceType ? null : s.value)
-                    }
+                    onClick={() => {
+                      if (!isLoggedIn) return;
+                      setServiceType(s.value === serviceType ? null : s.value);
+                    }}
+                    disabled={!isLoggedIn}
                     className={`text-xs font-medium px-3.5 py-2 rounded-full border transition ${
-                      serviceType === s.value
-                        ? "bg-primary text-white border-primary shadow-soft"
-                        : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
+                      !isLoggedIn
+                        ? "opacity-50 cursor-not-allowed bg-gray-100 border-gray-300 text-gray-500"
+                        : serviceType === s.value
+                          ? "bg-primary text-white border-primary shadow-soft"
+                          : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
                     }`}
+                    title={!isLoggedIn ? "Prijavite se da koristite ovaj filter" : ""}
                   >
                     {s.label}
                   </button>
@@ -328,13 +426,19 @@ export default function SalonsPage() {
                       <input
                         type="number"
                         value={minPrice ?? ""}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          if (!isLoggedIn) return;
                           setMinPrice(
                             e.target.value ? Number(e.target.value) : null,
-                          )
-                        }
+                          );
+                        }}
+                        disabled={!isLoggedIn}
                         placeholder="npr. 1000"
-                        className="w-full h-11 px-4 rounded-2xl bg-white border border-[var(--border)] outline-none focus:border-primary text-sm"
+                        className={`w-full h-11 px-4 rounded-2xl bg-white border outline-none text-sm ${
+                          !isLoggedIn
+                            ? "opacity-50 cursor-not-allowed bg-gray-100 border-gray-300"
+                            : "border-[var(--border)] focus:border-primary"
+                        }`}
                       />
                     </div>
 
@@ -346,13 +450,19 @@ export default function SalonsPage() {
                       <input
                         type="number"
                         value={maxPrice ?? ""}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          if (!isLoggedIn) return;
                           setMaxPrice(
                             e.target.value ? Number(e.target.value) : null,
-                          )
-                        }
+                          );
+                        }}
+                        disabled={!isLoggedIn}
                         placeholder="npr. 5000"
-                        className="w-full h-11 px-4 rounded-2xl bg-white border border-[var(--border)] outline-none focus:border-primary text-sm"
+                        className={`w-full h-11 px-4 rounded-2xl bg-white border outline-none text-sm ${
+                          !isLoggedIn
+                            ? "opacity-50 cursor-not-allowed bg-gray-100 border-gray-300"
+                            : "border-[var(--border)] focus:border-primary"
+                        }`}
                       />
                     </div>
 
@@ -361,13 +471,16 @@ export default function SalonsPage() {
                         Datum
                       </label>
 
-                      <PrettyDatePicker
-                        value={date ?? ""}
+                      <div className={!isLoggedIn ? "opacity-50 pointer-events-none" : ""}>
+                        <PrettyDatePicker
+                          value={date ?? ""}
                           onChange={(value) => {
-    setDate(value || null);
-    setOpenNow(false);
-  }}
-                      />
+                            if (!isLoggedIn) return;
+                            setDate(value || null);
+                            setOpenNow(false);
+                          }}
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -375,13 +488,16 @@ export default function SalonsPage() {
                         Vreme
                       </label>
 
-                      <PrettyTimePicker
-                        value={time ?? ""}
-                       onChange={(value) => {
-    setTime(value || null);
-    setOpenNow(false);
-  }}
-                      />
+                      <div className={!isLoggedIn ? "opacity-50 pointer-events-none" : ""}>
+                        <PrettyTimePicker
+                          value={time ?? ""}
+                          onChange={(value) => {
+                            if (!isLoggedIn) return;
+                            setTime(value || null);
+                            setOpenNow(false);
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
 

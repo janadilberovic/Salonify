@@ -73,9 +73,7 @@ useEffect(() => {
           </div>
           <div className="text-right shrink-0">
             <Rating value={averageRating ? averageRating : 0} size={13} />
-            <p className="text-[11px] text-muted mt-1">
-              {ratings?.length} recenzije
-            </p>
+           
           </div>
         </div>
 

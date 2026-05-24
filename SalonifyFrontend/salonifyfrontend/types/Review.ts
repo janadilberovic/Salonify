@@ -16,7 +16,8 @@ export type CreateReviewPayload = {
   comment: string;
 };
 export type ReviewSearchParams = {
-  minRating?: number;
-  serviceType?: string;
+  minRating?: number | "all";
+  serviceType?: number | "all";
   sortBy?: "newest" | "oldest" | "highest" | "lowest";
 };
+

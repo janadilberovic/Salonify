@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CalendarIcon,
   ClockIcon,
@@ -96,9 +97,12 @@ export default function BookingPanel({
   services: Service[];
   currency?: string;
 }) {
+  const router = useRouter();
   const days = useMemo(() => getNextDays(10), []);
   const todayKey = useMemo(() => getTodayKey(), []);
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState(services[0]?.id);
   const [selectedDay, setSelectedDay] = useState(todayKey);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -110,6 +114,13 @@ export default function BookingPanel({
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedRole = localStorage.getItem("role");
+    setIsLoggedIn(!!token);
+    setRole(storedRole);
+  }, []);
 
   const service = services.find((s) => s.id === selectedService);
 
@@ -236,6 +247,92 @@ export default function BookingPanel({
     );
   }
 
+  if (!isLoggedIn) {
+    return (
+      <div className="bg-white rounded-3xl border border-[var(--border)] shadow-soft p-8 text-center">
+        <h3 className="font-display text-2xl font-semibold mb-3">
+          Prijavite se da rezervišete
+        </h3>
+
+        <p className="text-sm text-muted mb-6">
+          Morate biti prijavljeni da bi mogli da rezervišete termin.
+        </p>
+
+        <div className="flex gap-3">
+          <Button
+            variant="primary"
+            className="flex-1"
+            onClick={() => router.push("/login")}
+          >
+            Prijava
+          </Button>
+          <Button
+            variant="ghost"
+            className="flex-1"
+            onClick={() => router.push("/register")}
+          >
+            Registracija
+          </Button>
+        </div>
+      </div>
+    );
+  }
+if (role !== "User") {
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-white shadow-soft p-7 sm:p-8 text-center">
+      <div className="absolute -top-16 -right-16 size-36 rounded-full bg-primary-soft/70 blur-2xl" />
+      <div className="absolute -bottom-20 -left-16 size-40 rounded-full bg-[var(--background-soft)] blur-2xl" />
+
+      <div className="relative">
+    
+
+        <span className="mt-5 mx-auto inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--background-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+          <SparkleIcon width={13} height={13} />
+          Rezervacija termina
+        </span>
+
+        <h3 className="font-display mt-4 text-2xl sm:text-3xl font-semibold leading-tight text-foreground">
+          Rezervacija je dostupna samo korisnicima
+        </h3>
+
+        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted">
+          Saloni i administratori mogu da upravljaju podacima, ali zakazivanje
+          tretmana je omogućeno samo korisničkim nalozima.
+        </p>
+
+        <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--background-soft)]/70 p-4 text-left">
+          <p className="text-sm font-semibold text-foreground">
+            Želiš da zakažeš termin?
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-muted">
+            Prijavi se kao korisnik ili napravi korisnički nalog kako bi mogao/la
+            da biraš usluge, termine i pošalješ zahtev salonu.
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={() => router.push("/login")}
+          >
+            Prijavi se
+            <ArrowRightIcon />
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={() => router.push("/")}
+          >
+            Nazad na početnu
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
   return (
     <div className="bg-white rounded-3xl border border-[var(--border)] shadow-soft p-6 lg:p-8 space-y-6">
       <div className="flex items-start justify-between gap-3">

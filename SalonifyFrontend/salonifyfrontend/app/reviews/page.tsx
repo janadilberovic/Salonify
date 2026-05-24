@@ -41,6 +41,56 @@ type PageReview = {
   salonId?: string;
 };
 
+type GetSalonIdByUserResponse =
+  | string
+  | {
+      salonId?: string;
+      id?: string;
+    };
+
+const NAME_IDENTIFIER_CLAIM =
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
+
+function getUserIdFromToken(): string | null {
+  const token = localStorage.getItem("token");
+
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+
+    return payload[NAME_IDENTIFIER_CLAIM] ?? null;
+  } catch (error) {
+    console.error("Greška pri čitanju userId iz tokena:", error);
+    return null;
+  }
+}
+
+function isValidMongoId(value: string | null | undefined): value is string {
+  return Boolean(
+    value &&
+    value !== "undefined" &&
+    value !== "null" &&
+    /^[a-fA-F0-9]{24}$/.test(value),
+  );
+}
+
+function resolveSalonId(result: GetSalonIdByUserResponse): string | null {
+  if (typeof result === "string") {
+    return isValidMongoId(result) ? result : null;
+  }
+
+  if (isValidMongoId(result?.salonId)) {
+    return result.salonId;
+  }
+
+  if (isValidMongoId(result?.id)) {
+    return result.id;
+  }
+
+  return null;
+}
+
 export default function ReviewsPage() {
   const [filter, setFilter] = useState<number | "all">("all");
   const [q, setQ] = useState("");
@@ -62,17 +112,48 @@ export default function ReviewsPage() {
 
   useEffect(() => {
     async function init() {
-      const storedRole = localStorage.getItem("role");
-      const storedUserId = localStorage.getItem("userId");
+      try {
+        const storedRole = localStorage.getItem("role");
+        const storedUserId = localStorage.getItem("userId");
+        const tokenUserId = getUserIdFromToken();
 
-      setRole(storedRole);
+        const userId = isValidMongoId(storedUserId)
+          ? storedUserId
+          : tokenUserId;
 
-      if (storedRole === "Salon" && storedUserId) {
-        const result = await getSalonIdByUser(storedUserId);
-        setSalonId(result.salonId);
+        setRole(storedRole);
+
+        if (storedRole !== "Salon") {
+          return;
+        }
+
+        if (!isValidMongoId(userId)) {
+          console.error("UserId nije validan ili ne postoji:", {
+            storedUserId,
+            tokenUserId,
+          });
+
+          localStorage.removeItem("userId");
+          return;
+        }
+
+        const result = (await getSalonIdByUser(
+          userId,
+        )) as GetSalonIdByUserResponse;
+
+        const resolvedSalonId = resolveSalonId(result);
+
+        if (!resolvedSalonId) {
+          console.error("SalonId nije validan:", result);
+          return;
+        }
+
+        setSalonId(resolvedSalonId);
+      } catch (error) {
+        console.error("Greška pri inicijalizaciji reviews stranice:", error);
+      } finally {
+        setReady(true);
       }
-
-      setReady(true);
     }
 
     init();
@@ -81,29 +162,24 @@ export default function ReviewsPage() {
   useEffect(() => {
     if (!ready) return;
 
-    console.log("ROLE:", role);
-    console.log("IS SALON:", isSalon);
-    console.log("SALON ID:", salonId);
-
     if (!isSalon || !salonId) {
-      console.log("PREKINUTO jer nije salon ili nema salonId");
       return;
     }
-    const currentSalonId = salonId;
 
     async function loadSalonReviews() {
       try {
         setLoading(true);
 
-        console.log("POZIVAM RECENZIJE ZA:", salonId);
+        const currentSalonId = salonId;
+
+        if (!currentSalonId) {
+          return;
+        }
 
         const [average, reviewsFromApi] = await Promise.all([
           getAverageReviewsForSalon(currentSalonId),
           getReviewsForSalon(currentSalonId),
         ]);
-
-        console.log("AVG:", average);
-        console.log("REVIEWS:", reviewsFromApi);
 
         const mappedReviews: PageReview[] = reviewsFromApi.map(
           (review: Review) => ({
@@ -127,7 +203,7 @@ export default function ReviewsPage() {
     }
 
     loadSalonReviews();
-  }, [ready, role, isSalon, salonId]);
+  }, [ready, isSalon, salonId]);
 
   const pageReviews: PageReview[] = isSalon
     ? salonReviews
@@ -163,7 +239,7 @@ export default function ReviewsPage() {
       return {
         star,
         n,
-        pct: (n / pageReviews.length) * 100,
+        pct: pageReviews.length ? (n / pageReviews.length) * 100 : 0,
       };
     });
 
@@ -173,31 +249,31 @@ export default function ReviewsPage() {
     };
   }, [pageReviews, isSalon, salonAvg]);
 
-const filtered = pageReviews.filter((r) => {
-  // 5 & up / 4 & up / 3 & up
-  if (filter !== "all" && r.rating < filter) return false;
+  const filtered = pageReviews.filter((r) => {
+    if (filter !== "all" && r.rating < filter) return false;
 
-  const qq = q.trim().toLowerCase();
+    const qq = q.trim().toLowerCase();
 
-  if (!qq) return true;
+    if (!qq) return true;
 
-  return (
-    r.body.toLowerCase().includes(qq) ||
-    r.author.toLowerCase().includes(qq) ||
-    r.service?.toLowerCase().includes(qq)
-  );
-});
+    return (
+      r.body.toLowerCase().includes(qq) ||
+      r.author.toLowerCase().includes(qq) ||
+      r.service?.toLowerCase().includes(qq)
+    );
+  });
+
   return (
     <>
       <Navbar />
 
       {/* HEADER */}
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 pt-10 lg:pt-14">
-        <div className="relative rounded-[2.5rem] overflow-hidden p-8 sm:p-12 bg-gradient-to-br from-white via-[#fdf0f7] to-[#f4e6f7] border border-white/80 shadow-softer">
-          <div className="absolute -top-20 -right-20 size-72 rounded-full bg-primary-soft blur-3xl" />
+      <section className="mx-auto max-w-7xl px-6 pt-10 lg:px-10 lg:pt-14">
+        <div className="relative overflow-hidden rounded-[2.5rem] border border-white/80 bg-gradient-to-br from-white via-[#fdf0f7] to-[#f4e6f7] p-8 shadow-softer sm:p-12">
+          <div className="absolute -right-20 -top-20 size-72 rounded-full bg-primary-soft blur-3xl" />
           <div className="absolute -bottom-24 -left-20 size-80 rounded-full bg-accent-soft blur-3xl" />
 
-          <div className="relative grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center">
+          <div className="relative grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
             <div>
               <EyebrowLabel>
                 {isSalon
@@ -205,7 +281,7 @@ const filtered = pageReviews.filter((r) => {
                   : "Realne recenzije, realne posete"}
               </EyebrowLabel>
 
-              <h1 className="font-display mt-4 text-4xl sm:text-6xl font-semibold tracking-tight leading-[1.03]">
+              <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.03] tracking-tight sm:text-6xl">
                 {isSalon ? (
                   <>
                     Šta vaši{" "}
@@ -221,22 +297,23 @@ const filtered = pageReviews.filter((r) => {
                 )}
               </h1>
 
-              <p className="mt-4 text-muted max-w-xl">
+              <p className="mt-4 max-w-xl text-muted">
                 {isSalon
                   ? "Ovde vidiš sve recenzije koje su korisnici ostavili za tvoj salon — ocene, komentare i utiske nakon posete."
                   : "Sve recenzije na Salonify platformi dolaze nakon potvrđenih termina. Bez lažnih utisaka i preuveličavanja - samo iskrena iskustva zadovoljnih klijenata."}
               </p>
             </div>
 
-            <div className="bg-white rounded-3xl border border-[var(--border)] shadow-soft p-7">
+            <div className="rounded-3xl border border-[var(--border)] bg-white p-7 shadow-soft">
               <div className="flex items-end gap-4">
-                <p className="font-display text-7xl font-semibold text-primary leading-none">
+                <p className="font-display text-7xl font-semibold leading-none text-primary">
                   {avg.toFixed(1)}
                 </p>
 
                 <div className="pb-2">
                   <Rating value={avg} size={20} />
-                  <p className="text-xs text-muted mt-2">
+
+                  <p className="mt-2 text-xs text-muted">
                     Od ukupno {pageReviews.length} ocena
                   </p>
                 </div>
@@ -249,17 +326,17 @@ const filtered = pageReviews.filter((r) => {
                     onClick={() =>
                       setFilter(filter === b.star ? "all" : b.star)
                     }
-                    className={`w-full flex items-center gap-3 text-sm p-1.5 -mx-1.5 rounded-xl transition ${
+                    className={`-mx-1.5 flex w-full items-center gap-3 rounded-xl p-1.5 text-sm transition ${
                       filter === b.star
                         ? "bg-primary-soft/60"
                         : "hover:bg-primary-soft/30"
                     }`}
                   >
-                    <span className="w-7 text-muted text-left">{b.star}★</span>
+                    <span className="w-7 text-left text-muted">{b.star}★</span>
 
-                    <div className="flex-1 h-2 rounded-full bg-[var(--background-soft)] overflow-hidden">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--background-soft)]">
                       <div
-                        className="h-full bg-gradient-to-r from-primary to-[#d7a2ec] rounded-full"
+                        className="h-full rounded-full bg-gradient-to-r from-primary to-[#d7a2ec]"
                         style={{ width: `${b.pct}%` }}
                       />
                     </div>
@@ -276,15 +353,15 @@ const filtered = pageReviews.filter((r) => {
       </section>
 
       {/* CONTROLS */}
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-10">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-2 flex-wrap">
+      <section className="mx-auto mt-10 max-w-7xl px-6 lg:px-10">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setFilter("all")}
-              className={`text-sm font-medium px-4 py-2 rounded-full border transition ${
+              className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
                 filter === "all"
-                  ? "bg-primary text-white border-primary shadow-soft"
-                  : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
+                  ? "border-primary bg-primary text-white shadow-soft"
+                  : "border-[var(--border)] bg-white hover:border-primary hover:text-primary"
               }`}
             >
               Sve recenzije
@@ -294,10 +371,10 @@ const filtered = pageReviews.filter((r) => {
               <button
                 key={n}
                 onClick={() => setFilter(filter === n ? "all" : n)}
-                className={`text-sm font-medium px-4 py-2 rounded-full border transition inline-flex items-center gap-1 ${
+                className={`inline-flex items-center gap-1 rounded-full border px-4 py-2 text-sm font-medium transition ${
                   filter === n
-                    ? "bg-primary text-white border-primary shadow-soft"
-                    : "bg-white border-[var(--border)] hover:border-primary hover:text-primary"
+                    ? "border-primary bg-primary text-white shadow-soft"
+                    : "border-[var(--border)] bg-white hover:border-primary hover:text-primary"
                 }`}
               >
                 {n} <StarIcon width={12} height={12} />
@@ -306,12 +383,13 @@ const filtered = pageReviews.filter((r) => {
             ))}
           </div>
 
-          <div className="relative max-w-sm w-full">
+          <div className="relative w-full max-w-sm">
             <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search reviews…"
+              placeholder="Pretraži recenzije..."
               className="pl-11"
             />
           </div>
@@ -319,13 +397,13 @@ const filtered = pageReviews.filter((r) => {
       </section>
 
       {/* GRID */}
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-6">
-        {loading ? (
-          <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-14 text-center">
+      <section className="mx-auto mt-6 max-w-7xl px-6 lg:px-10">
+        {loading || !ready ? (
+          <div className="rounded-3xl border border-[var(--border)] bg-white p-14 text-center shadow-softer">
             <p className="text-muted">Učitavanje recenzija...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-14 text-center">
+          <div className="rounded-3xl border border-[var(--border)] bg-white p-14 text-center shadow-softer">
             <p className="text-muted">
               {isSalon
                 ? "Trenutno nema recenzija za tvoj salon."
@@ -333,7 +411,7 @@ const filtered = pageReviews.filter((r) => {
             </p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((r) => {
               const salon = !isSalon
                 ? SALONS.find((s) => s.id === r.salonId)
@@ -342,31 +420,33 @@ const filtered = pageReviews.filter((r) => {
               return (
                 <div
                   key={r.id}
-                  className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-6 hover-lift flex flex-col"
+                  className="hover-lift flex flex-col rounded-3xl border border-[var(--border)] bg-white p-6 shadow-softer"
                 >
                   <div className="flex items-center justify-between">
                     <Rating value={r.rating} size={15} />
+
                     <span className="text-xs text-muted">
                       {timeAgo(r.date)}
                     </span>
                   </div>
 
-                  <p className="mt-4 text-[15px] leading-relaxed text-foreground/85 flex-1">
+                  <p className="mt-4 flex-1 text-[15px] leading-relaxed text-foreground/85">
                     &ldquo;{r.body}&rdquo;
                   </p>
 
-                  <div className="mt-5 pt-5 border-t border-[var(--border)] flex items-center gap-3">
+                  <div className="mt-5 flex items-center gap-3 border-t border-[var(--border)] pt-5">
                     <Avatar name={r.author} size={40} />
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate">
+                      <p className="truncate text-sm font-semibold">
                         {r.author}
                       </p>
-                      <p className="text-xs text-muted truncate">{r.service}</p>
+
+                      <p className="truncate text-xs text-muted">{r.service}</p>
                     </div>
 
                     {isSalon && r.imageUrl && (
-                      <div className="relative size-10 rounded-xl overflow-hidden shrink-0 border border-[var(--border)]">
+                      <div className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-[var(--border)]">
                         <img
                           src={r.imageUrl}
                           alt="Review image"
@@ -378,7 +458,7 @@ const filtered = pageReviews.filter((r) => {
                     {!isSalon && salon && (
                       <Link
                         href={`/salons/${salon.slug}`}
-                        className="relative size-10 rounded-xl overflow-hidden shrink-0 border border-[var(--border)]"
+                        className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-[var(--border)]"
                         title={salon.name}
                       >
                         <Image
@@ -400,17 +480,17 @@ const filtered = pageReviews.filter((r) => {
 
       {/* LEAVE A REVIEW - SAMO ZA KORISNIKA */}
       {isUser && (
-        <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-20">
-          <div className="grid lg:grid-cols-[1fr_1.3fr] gap-6 items-start">
-            <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-8">
+        <section className="mx-auto mt-20 max-w-7xl px-6 lg:px-10">
+          <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.3fr]">
+            <div className="rounded-3xl border border-[var(--border)] bg-white p-8 shadow-softer">
               <EyebrowLabel>Vaš red!</EyebrowLabel>
 
-              <h2 className="font-display mt-3 text-3xl font-semibold">
+              <h2 className="mt-3 font-display text-3xl font-semibold">
                 Recite nam Vaše iskustvo!
               </h2>
 
               <p className="mt-3 text-muted">
-                Nekoliko lepih (ili iskrenih) reči pomaže drugim klijentima da
+                Nekoliko lepih ili iskrenih reči pomaže drugim klijentima da
                 pronađu svoj sledeći ritual, a salonima da rastu na pravi način.
               </p>
 
@@ -418,7 +498,7 @@ const filtered = pageReviews.filter((r) => {
                 {["Hair", "Nails", "Facial"].map((c) => (
                   <span
                     key={c}
-                    className="text-xs text-center font-medium py-2 rounded-full bg-primary-soft/50 text-[#5b3e8a]"
+                    className="rounded-full bg-primary-soft/50 py-2 text-center text-xs font-medium text-[#5b3e8a]"
                   >
                     {c}
                   </span>
@@ -426,18 +506,18 @@ const filtered = pageReviews.filter((r) => {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-8">
+            <div className="rounded-3xl border border-[var(--border)] bg-white p-8 shadow-softer">
               {submitted ? (
-                <div className="text-center py-10">
-                  <span className="inline-flex items-center justify-center size-16 rounded-full bg-success-soft text-[#2f6a51] mx-auto">
+                <div className="py-10 text-center">
+                  <span className="mx-auto inline-flex size-16 items-center justify-center rounded-full bg-success-soft text-[#2f6a51]">
                     <SparkleIcon width={26} height={26} />
                   </span>
 
-                  <h3 className="font-display mt-5 text-2xl font-semibold">
+                  <h3 className="mt-5 font-display text-2xl font-semibold">
                     Hvala Vam✿
                   </h3>
 
-                  <p className="mt-2 text-sm text-muted max-w-sm mx-auto">
+                  <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
                     Vaša recenzija je poslata — biće prikazana nakon kratke
                     provere.
                   </p>
@@ -494,7 +574,7 @@ const filtered = pageReviews.filter((r) => {
                     <Textarea
                       value={text}
                       onChange={(e) => setText(e.target.value)}
-                      placeholder="Describe your experience — service, staff, space…"
+                      placeholder="Opišite svoje iskustvo — usluga, osoblje, prostor..."
                       className="min-h-36"
                     />
                   </div>

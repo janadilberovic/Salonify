@@ -31,11 +31,13 @@ export default async function SalonPage({
   const { reviewAppointmentId, service } = await searchParams;
 
   let salon;
+  console.log("ovo je slug preko kog trazim", slug);
 
   try {
     salon = await getSalonBySlugOrId(slug);
-  } catch {
-    notFound();
+  } catch(error) {
+     console.error("Greška kod učitavanja salona:", error);
+  notFound();
   }
   const averageRating = await getAverageReviewsForSalon(salon.id);
   const reviews = await getReviewsForSalon(salon.id);
@@ -280,11 +282,13 @@ export default async function SalonPage({
           </div>
         </div>
         <ReviewBlock
+          salonId={salon.id}
           reviews={reviews}
           rating={averageRating ?? 0}
           count={reviews.length}
           reviewAppointmentId={reviewAppointmentId}
           reviewServiceName={service}
+          availableServices={(salon.services ?? []).map(MapService)}
         />
       </section>
 
@@ -321,6 +325,7 @@ import {
   getAverageReviewsForSalon,
   getReviewsForSalon,
 } from "@/services/reviews";
+import { MapService } from "@/mappers/salon";
 function RelatedCard({ salon }: { salon: Salon }) {
   return (
     <Link
