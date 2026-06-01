@@ -6,9 +6,11 @@ import {
 } from "@/types/Review";
 
 export async function getAverageReviewsForSalon(salonID: string) {
-  return apiFetch<number>(
+  const average = await apiFetch<number>(
     `/api/review/get-average-reviews-for-salon?salonID=${salonID}`
   );
+
+  return Number(average.toFixed(2));
 }
 
 export async function getReviewsForSalon(salonID: string) {

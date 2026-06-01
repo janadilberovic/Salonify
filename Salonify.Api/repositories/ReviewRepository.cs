@@ -81,7 +81,8 @@ public class ReviewRepository
 
         if (!reviews.Any())
             return 0;
-        return reviews.Average(r => r.Rating);
+
+        return Math.Round(reviews.Average(r => r.Rating), 2);
     }
     public async Task<int> GetReviewCountForSalon(string salonId)
     {

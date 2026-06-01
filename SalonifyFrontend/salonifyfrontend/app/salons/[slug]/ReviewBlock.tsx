@@ -287,7 +287,7 @@ export default function ReviewBlock({
         <div className="rounded-[28px] border border-[var(--border)] bg-white p-7 shadow-softer">
           <div className="flex items-center gap-5">
             <p className="font-display text-6xl font-semibold leading-none text-primary">
-              {rating.toFixed(1)}
+              {rating.toFixed(2)}
             </p>
 
             <div>

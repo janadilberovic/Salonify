@@ -307,7 +307,7 @@ export default function ReviewsPage() {
             <div className="rounded-3xl border border-[var(--border)] bg-white p-7 shadow-soft">
               <div className="flex items-end gap-4">
                 <p className="font-display text-7xl font-semibold leading-none text-primary">
-                  {avg.toFixed(1)}
+                  {avg.toFixed(2)}
                 </p>
 
                 <div className="pb-2">

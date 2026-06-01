@@ -252,7 +252,7 @@ export function Rating({
       })}
       {showValue && (
         <span className="ml-1.5 text-xs font-semibold text-foreground">
-          {value.toFixed(1)}
+          {value.toFixed(2)}
         </span>
       )}
     </span>
