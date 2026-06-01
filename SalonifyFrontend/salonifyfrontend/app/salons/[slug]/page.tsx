@@ -16,6 +16,7 @@ import {
 import { getSalon, SALONS } from "../../lib/data";
 import BookingPanel from "./BookingPanel";
 import ReviewBlock from "./ReviewBlock";
+import ServiceDetailsList from "./ServiceDetailsList";
 import { getSalonBySlugOrId } from "../../../services/salon";
 export default async function SalonPage({
   params,
@@ -32,7 +33,7 @@ export default async function SalonPage({
 
   let salon;
   console.log("ovo je slug preko kog trazim", slug);
-
+  
   try {
     salon = await getSalonBySlugOrId(slug);
   } catch(error) {
@@ -220,10 +221,12 @@ export default async function SalonPage({
               Sve usluge salona nalaze se ispod.
             </h2>
 
-            <div className="mt-8 space-y-4">
-              {salon.services.map((s) => (
+            <ServiceDetailsList salonId={salon.id} services={salon.services} />
+
+            <div className="hidden">
+              {salon.services.map((s, index) => (
                 <div
-                  key={s.id}
+                  key={`${s.id}-${s.name}-${index}`}
                   className="bg-white rounded-3xl border border-[var(--border)] shadow-softer p-4 flex gap-5 hover-lift"
                 >
                   <div className="relative w-28 sm:w-36 aspect-square rounded-2xl overflow-hidden shrink-0">

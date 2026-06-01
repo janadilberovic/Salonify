@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Salonify.Api.Repositories;
+using Salonify.Api.Services;
 using System.Security.Claims;
 
 namespace Salonify.Api.Controllers;
@@ -12,11 +13,17 @@ public class ReviewController : ControllerBase
     private readonly ReviewRepository _reviewRepository;
     private readonly SalonRepository _salonRepository;
     private readonly AppointmentRepository _appointmentRepository;
-    public ReviewController(ReviewRepository reviewRepository, SalonRepository salonRepository, AppointmentRepository appointmentRepository)
+    private readonly ActivityTrackingService _activityTrackingService;
+    public ReviewController(
+        ReviewRepository reviewRepository,
+        SalonRepository salonRepository,
+        AppointmentRepository appointmentRepository,
+        ActivityTrackingService activityTrackingService)
     {
         _reviewRepository = reviewRepository;
         _salonRepository = salonRepository;
         _appointmentRepository = appointmentRepository;
+        _activityTrackingService = activityTrackingService;
 
     }
 
@@ -80,6 +87,12 @@ public class ReviewController : ControllerBase
         };
 
         await _reviewRepository.CreateReview(review);
+        await _activityTrackingService.TrackAsync(
+            userId,
+            ActivityType.ReviewAdded,
+            review.ServiceType,
+            review.SalonId
+        );
 
 
 

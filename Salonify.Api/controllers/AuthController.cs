@@ -45,6 +45,7 @@ public class AuthController : ControllerBase
             Role = user.Role.ToString(),
             DisplayName = user.DisplayName,
             Id=user.Id,
+            UserId = user.Id,
         };
 
         return Ok(response);

@@ -4,4 +4,5 @@ public class AuthResponse
     public string Role { get; set; }
     public string DisplayName { get; set; }
     public string Id{get; set;}
+    public string UserId { get; set; }
 }

@@ -25,4 +25,6 @@ public class Salon
     public List<SalonService> Services { get; set; } = new();
     public List<string> GalleryImageUrls { get; set; } = new();
     public string Slug { get; set; } = string.Empty;
+    public Dictionary<string, double> FeatureVector { get; set; } = new();
+
 }

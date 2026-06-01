@@ -88,6 +88,10 @@ function getServiceTypeNumber(service: Service) {
   return 11;
 }
 
+function getServiceSelectionKey(service: Service, index: number) {
+  return `${service.id}-${service.name}-${index}`;
+}
+
 export default function BookingPanel({
   salonId,
   services,
@@ -103,7 +107,9 @@ export default function BookingPanel({
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState<string | null>(null);
-  const [selectedService, setSelectedService] = useState(services[0]?.id);
+  const [selectedService, setSelectedService] = useState(
+    services[0] ? getServiceSelectionKey(services[0], 0) : ""
+  );
   const [selectedDay, setSelectedDay] = useState(todayKey);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
@@ -122,7 +128,10 @@ export default function BookingPanel({
     setRole(storedRole);
   }, []);
 
-  const service = services.find((s) => s.id === selectedService);
+  const service =
+    services.find(
+      (s, index) => getServiceSelectionKey(s, index) === selectedService
+    ) ?? services[0];
 
   const selectedSlot = availableSlots.find(
     (slot) => slot.startTime === selectedTime
@@ -356,16 +365,19 @@ if (role !== "User") {
         <Label>Usluga</Label>
 
         <div className="grid sm:grid-cols-2 gap-2">
-          {services.map((s) => (
+          {services.map((s, index) => {
+            const serviceKey = getServiceSelectionKey(s, index);
+
+            return (
             <button
-              key={s.id}
+              key={serviceKey}
               type="button"
               onClick={() => {
-                setSelectedService(s.id);
+                setSelectedService(serviceKey);
                 setSelectedTime(null);
               }}
               className={`text-left p-4 rounded-2xl border-2 transition ${
-                selectedService === s.id
+                selectedService === serviceKey
                   ? "border-primary bg-primary-soft/40"
                   : "border-[var(--border)] bg-white hover:border-primary/60"
               }`}
@@ -380,7 +392,8 @@ if (role !== "User") {
                 {s.price} {currency}
               </p>
             </button>
-          ))}
+          );
+          })}
         </div>
       </div>
 

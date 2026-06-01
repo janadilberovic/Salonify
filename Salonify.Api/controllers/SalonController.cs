@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Salonify.Api.Repositories;
+using Salonify.Api.Services;
 using System.Security.Claims;
 
 namespace Salonify.Api.Controllers;
@@ -10,10 +11,14 @@ namespace Salonify.Api.Controllers;
 public class SalonController : ControllerBase
 {
     private readonly SalonRepository _salonRepository;
+    private readonly ActivityTrackingService _activityTrackingService;
 
-    public SalonController(SalonRepository salonRepository)
+    public SalonController(
+        SalonRepository salonRepository,
+        ActivityTrackingService activityTrackingService)
     {
         _salonRepository = salonRepository;
+        _activityTrackingService = activityTrackingService;
     }
 
     [Authorize(Roles = "Salon")]
@@ -175,6 +180,7 @@ public class SalonController : ControllerBase
         };
         await _salonRepository.AddGalleryImageAsync(userId, imageUrl);
         await _salonRepository.AddServiceAsync(userId, service);
+        await _activityTrackingService.UpdateSalonFeatureVectorByUserIdAsync(userId);
 
         return NoContent();
     }
@@ -193,6 +199,7 @@ public class SalonController : ControllerBase
             return NotFound(new { error = "Salon profil nije pronađen." });
 
         await _salonRepository.RemoveServiceAsync(userId, serviceType);
+        await _activityTrackingService.UpdateSalonFeatureVectorByUserIdAsync(userId);
 
         return NoContent();
 
@@ -247,6 +254,7 @@ public class SalonController : ControllerBase
         };
 
         await _salonRepository.UpdateServiceAsync(userId, updatedService);
+        await _activityTrackingService.UpdateSalonFeatureVectorByUserIdAsync(userId);
 
         return NoContent();
     }
@@ -257,6 +265,12 @@ public class SalonController : ControllerBase
 
         if (salon == null)
             return NotFound(new { error = "Salon profil nije pronađen." });
+
+        await _activityTrackingService.TrackSalonAsync(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            ActivityType.ViewSalon,
+            salon
+        );
 
         return Ok(salon);
     }
@@ -287,6 +301,32 @@ public class SalonController : ControllerBase
         return Ok(services);
     }
 
+    [Authorize(Roles = "User,Admin")]
+    [HttpPost("{salonId}/view-service")]
+    public async Task<IActionResult> TrackViewService(
+        string salonId,
+        [FromBody] ViewServiceActivityRequest request)
+    {
+        var salon = await _salonRepository.GetByIdAsync(salonId);
+
+        if (salon == null)
+            return NotFound(new { message = "Salon nije pronađen." });
+
+        var serviceExists = salon.Services.Any(s => s.ServiceType == request.ServiceType);
+
+        if (!serviceExists)
+            return BadRequest(new { message = "Usluga ne postoji u ovom salonu." });
+
+        await _activityTrackingService.TrackAsync(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            ActivityType.ViewService,
+            request.ServiceType,
+            salonId
+        );
+
+        return NoContent();
+    }
+
     [HttpGet("get-by-city/{city}")]
     public async Task<IActionResult> GetByCity(string city)
     {
@@ -297,6 +337,15 @@ public class SalonController : ControllerBase
     public async Task<IActionResult> SearchByService(string serviceType)
     {
         var salons = await _salonRepository.GetByServiceTypeAsync(serviceType);
+        if (Enum.TryParse<ServiceType>(serviceType, true, out var parsedServiceType))
+        {
+            await _activityTrackingService.TrackAsync(
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                ActivityType.Search,
+                parsedServiceType
+            );
+        }
+
         if (salons == null || !salons.Any())
         {
             return Ok(new
@@ -313,6 +362,15 @@ public class SalonController : ControllerBase
     public async Task<IActionResult> SearchByPriceService(string serviceType, [FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
     {
         var results = await _salonRepository.SearchByPrice(serviceType, minPrice, maxPrice);
+        if (Enum.TryParse<ServiceType>(serviceType, true, out var parsedServiceType))
+        {
+            await _activityTrackingService.TrackAsync(
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                ActivityType.Search,
+                parsedServiceType
+            );
+        }
+
         if (results == null || !results.Any())
         {
             return Ok(new
@@ -346,6 +404,15 @@ public class SalonController : ControllerBase
         [FromQuery] string? time)
     {
         var results = await _salonRepository.SearchAsync(city, serviceType, minPrice, maxPrice, day, time);
+        var trackedServiceType = Enum.TryParse<ServiceType>(serviceType, true, out var parsedServiceType)
+            ? parsedServiceType
+            : ServiceType.Other;
+
+        await _activityTrackingService.TrackAsync(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            ActivityType.Search,
+            trackedServiceType
+        );
 
         if (results == null || !results.Any())
         {
@@ -457,6 +524,12 @@ public class SalonController : ControllerBase
 
         if (salon == null)
             return NotFound(new { message = "Salon nije pronađen." });
+
+        await _activityTrackingService.TrackSalonAsync(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            ActivityType.ViewSalon,
+            salon
+        );
 
         return Ok(salon);
     }

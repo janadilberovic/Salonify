@@ -487,7 +487,15 @@ public class SalonRepository
     {
         return await _salons.Find(s => s.Slug == slug).FirstOrDefaultAsync();
     }
+    public async Task UpdateFeatureVectorAsync(
+    string salonId,
+    Dictionary<string, double> featureVector)
+    {
+        var update = Builders<Salon>.Update
+            .Set(x => x.FeatureVector, featureVector);
 
+        await _salons.UpdateOneAsync(x => x.Id == salonId, update);
+    }
 }
 
 

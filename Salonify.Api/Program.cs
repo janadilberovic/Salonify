@@ -76,6 +76,10 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SalonRepository>();
 builder.Services.AddScoped<AppointmentRepository>();
 builder.Services.AddScoped<ReviewRepository>();
+builder.Services.AddScoped<UserActivityRepository>();
+builder.Services.AddScoped<ActivityTrackingService>();
+builder.Services.AddScoped<RecommendationService>();
+builder.Services.AddHostedService<SalonFeatureVectorRefreshService>();
 
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddCors(options =>

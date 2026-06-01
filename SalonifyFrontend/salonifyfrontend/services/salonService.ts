@@ -28,3 +28,22 @@ export async function getServicesFromSalon(salonId: string) {
     `/api/salon/get-services-from-salon/${salonId}`
   );
 }
+
+export async function trackServiceView(salonId: string, serviceType: number) {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!token || !apiBaseUrl) {
+    return;
+  }
+
+  await fetch(`${apiBaseUrl}/api/salon/${salonId}/view-service`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ serviceType }),
+  });
+}

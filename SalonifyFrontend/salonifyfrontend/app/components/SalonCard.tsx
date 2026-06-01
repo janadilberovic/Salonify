@@ -36,7 +36,7 @@ useEffect(() => {
   return (
     <Link
       href={`/salons/${salon.slug}`}
-      className="group block bg-white rounded-3xl border border-[var(--border)] shadow-softer hover-lift overflow-hidden"
+      className="group flex h-full flex-col bg-white rounded-3xl border border-[var(--border)] shadow-softer hover-lift overflow-hidden"
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <Image
@@ -63,7 +63,7 @@ useEffect(() => {
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="p-5 flex flex-1 flex-col">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="font-display text-xl font-semibold leading-tight truncate">
@@ -88,7 +88,7 @@ useEffect(() => {
           ))}
         </div>
 
-        <div className="mt-5 pt-4 border-t border-[var(--border)] flex items-center justify-between">
+        <div className="mt-auto pt-4 border-t border-[var(--border)] flex items-center justify-between">
           <span className="text-xs text-muted">
             od {Math.min(...salon.services.map((s) => s.price))} rsd
           </span>

@@ -2,6 +2,7 @@ using DnsClient.Protocol;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Salonify.Api.Repositories;
+using Salonify.Api.Services;
 using System.Security.Claims;
 
 namespace Salonify.Api.Controllers;
@@ -14,12 +15,19 @@ public class AppointmentController : ControllerBase
     private readonly SalonRepository _salonRepository;
     private readonly UserRepository _userRepository;
     private readonly ReviewRepository _reviewRepository;
-    public AppointmentController(AppointmentRepository ar, SalonRepository sr, UserRepository ur,ReviewRepository rr)
+    private readonly ActivityTrackingService _activityTrackingService;
+    public AppointmentController(
+        AppointmentRepository ar,
+        SalonRepository sr,
+        UserRepository ur,
+        ReviewRepository rr,
+        ActivityTrackingService activityTrackingService)
     {
         _appointmentRepository = ar;
         _salonRepository = sr;
         _userRepository = ur;
         _reviewRepository=rr;
+        _activityTrackingService = activityTrackingService;
     }
 
     [HttpGet("get/{id}")]
@@ -110,6 +118,12 @@ public class AppointmentController : ControllerBase
         };
 
         await _appointmentRepository.CreateAsync(appointment);
+        await _activityTrackingService.TrackAsync(
+            userId,
+            ActivityType.AppointmentCreated,
+            appointment.ServiceType,
+            appointment.SalonId
+        );
 
         return Ok(new
         {
@@ -297,6 +311,12 @@ public class AppointmentController : ControllerBase
         await _appointmentRepository.UpdateStatusAsync(
             appointmentId,
             AppointmentStatus.Completed
+        );
+        await _activityTrackingService.TrackAsync(
+            appointment.UserId,
+            ActivityType.AppointmentCompleted,
+            appointment.ServiceType,
+            appointment.SalonId
         );
 
         var updated = await _appointmentRepository.GetByIdAsync(appointmentId);
@@ -622,6 +642,12 @@ public class AppointmentController : ControllerBase
             await _appointmentRepository.UpdateStatusAsync(
                 appointment.Id,
                 AppointmentStatus.Completed
+            );
+            await _activityTrackingService.TrackAsync(
+                appointment.UserId,
+                ActivityType.AppointmentCompleted,
+                appointment.ServiceType,
+                appointment.SalonId
             );
 
             //appointment.Status = AppointmentStatus.Completed;

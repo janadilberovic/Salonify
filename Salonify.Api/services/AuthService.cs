@@ -44,6 +44,7 @@ public class AuthService
                 Name = request.DisplayName,
                 Slug = $"{baseSlug}-{Guid.NewGuid().ToString("N")[..6]}",
                 Description = request.SalonDescription ?? "",
+                FeatureVector = new Dictionary<string, double>()
 
             };
 

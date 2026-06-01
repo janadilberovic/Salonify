@@ -13,13 +13,15 @@ public class User
     public string DisplayName { get; set; }
     public string PasswordHash { get; set; }
 
-    
+
     [BsonRepresentation(BsonType.String)]
     public UserRole Role { get; set; }
 
-    
+
     public string? ProfileImageUrl { get; set; }
     public string Phone { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public Dictionary<string, double> PreferenceVector { get; set; } = new();
+
 }

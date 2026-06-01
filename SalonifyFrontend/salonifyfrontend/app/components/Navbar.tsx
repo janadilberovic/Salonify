@@ -35,6 +35,8 @@ export default function Navbar() {
 
     { href: "/appointments", label: "Moji termini", show: isUser },
 
+    { href: "/account", label: "Moj profil", show: isUser },
+
     { href: "/dashboard", label: "Dashboard", show: isSalon || isAdmin },
 
     { href: "/reviews", label: "Recenzije", show: isSalon || isAdmin },
