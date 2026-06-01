@@ -54,7 +54,7 @@ function getImageUrl(url?: string | null) {
 }
 export function MapService(s: Service): SalonService {
   return {
-    serviceType: s.serviceType ?? 11,
+    serviceType: getServiceTypeNumber(s.serviceType),
     name: s.name,
     description: s.description || "",
     price: s.price,
@@ -62,4 +62,17 @@ export function MapService(s: Service): SalonService {
     imageUrl: s.image || "",
     serviceName: s.name,
   };
+}
+
+function getServiceTypeNumber(serviceType?: string | number) {
+  if (typeof serviceType === "number") {
+    return serviceType;
+  }
+
+  if (typeof serviceType === "string") {
+    const parsed = Number(serviceType);
+    return Number.isNaN(parsed) ? 11 : parsed;
+  }
+
+  return 11;
 }

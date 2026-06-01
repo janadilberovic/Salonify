@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SalonCard from "../components/SalonCard";
@@ -59,13 +58,6 @@ export default function RecommendedPage() {
 
             <div className="mt-6 flex gap-3">
               <LinkButton href="/salons">Svi saloni</LinkButton>
-
-              <Link
-                href="/reviews"
-                className="text-sm font-medium px-6 py-3 rounded-full border border-[var(--border)] hover:border-primary hover:text-primary transition"
-              >
-                Sve recenzije
-              </Link>
             </div>
           </div>
         </div>

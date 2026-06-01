@@ -21,6 +21,13 @@ type RecommendedSalonApi = {
 };
 
 export async function getRecommendedSalons() {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  if (!token) {
+    return [];
+  }
+
   const data = await apiFetch<RecommendedSalonApi[]>("/api/recommendations");
 
   return data.map((item) => ({

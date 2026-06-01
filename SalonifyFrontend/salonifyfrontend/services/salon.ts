@@ -60,6 +60,24 @@ export async function getSalonBySlugOrId(value: string) {
   const data= await apiFetch<SalonApi>(`/api/salon/get-salon-by-slug-or-id/${value}`);
   return mapSalonApiToUI(data);
 }
+
+export async function trackSalonView(salonId: string) {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!token || !apiBaseUrl) {
+    return;
+  }
+
+  await fetch(`${apiBaseUrl}/api/salon/${salonId}/view-salon`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export async function searchSalons(params: SalonSearchParams) {
   const query = new URLSearchParams();
 

@@ -3,7 +3,12 @@ export type AppointmentStatus =
   | "Approved"
   | "Rejected"
   | "Cancelled"
-  | "Completed";
+  | "Completed"
+  | 0
+  | 1
+  | 2
+  | 3
+  | 4;
 
 export type AppointmentApi = {
   id: string;

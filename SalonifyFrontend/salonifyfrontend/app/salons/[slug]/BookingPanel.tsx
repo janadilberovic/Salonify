@@ -16,6 +16,7 @@ import {
   createAppointment,
   getAvailableAppointmentsByDate,
 } from "@/services/appointment";
+import { trackServiceView } from "@/services/salonService";
 import { Service } from "@/app/lib/data";
 
 function getNextDays(count: number) {
@@ -138,6 +139,17 @@ export default function BookingPanel({
   );
 
   const canBook = !!selectedSlot && selectedSlot.isAvailable && !bookingLoading;
+
+  async function handleSelectService(serviceKey: string, selected: Service) {
+    setSelectedService(serviceKey);
+    setSelectedTime(null);
+
+    try {
+      await trackServiceView(salonId, getServiceTypeNumber(selected));
+    } catch {
+      // Tracking je best-effort; izbor termina treba da radi i bez njega.
+    }
+  }
 
   useEffect(() => {
     async function loadAvailableSlots() {
@@ -372,10 +384,7 @@ if (role !== "User") {
             <button
               key={serviceKey}
               type="button"
-              onClick={() => {
-                setSelectedService(serviceKey);
-                setSelectedTime(null);
-              }}
+              onClick={() => handleSelectService(serviceKey, s)}
               className={`text-left p-4 rounded-2xl border-2 transition ${
                 selectedService === serviceKey
                   ? "border-primary bg-primary-soft/40"

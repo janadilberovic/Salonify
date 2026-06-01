@@ -152,8 +152,9 @@ export default function AppointmentsPage() {
   }, [appts, tab]);
 
   const counts = {
-    upcoming: appts.filter((a) => ["Pending", "Approved"].includes(a.status))
-      .length,
+    upcoming: appts.filter(
+      (a) => a.status === "Pending" || a.status === "Approved"
+    ).length,
     completed: appts.filter((a) => a.status === "Completed").length,
     cancelled: appts.filter(
       (a) => a.status === "Cancelled" || a.status === "Rejected",

@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Salonify.Api.Services;
 using System.Security.Claims;
 
-namespace Salonify.Api.Controllers;
-
 [ApiController]
 [Route("api/recommendations")]
 public class RecommendationController : ControllerBase
@@ -30,6 +28,15 @@ public class RecommendationController : ControllerBase
             return Unauthorized(new { message = "Nedostaje UserId u tokenu." });
 
         var recommendations = await _recommendationService.GetRecommendedSalonsAsync(userId);
+
+        return Ok(recommendations);
+    }
+
+    [Authorize(Roles = "User,Admin")]
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetRecommendationsForUser(string userId)
+    {
+        var recommendations = await _recommendationService.GetRecommendationsForUser(userId);
 
         return Ok(recommendations);
     }

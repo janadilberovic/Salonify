@@ -41,7 +41,7 @@ export async function cancelAppointment(appointmentId: string) {
 }
 export async function getUpcomingAppointmentsForUser() {
   return apiFetch<AppointmentApi[]>(
-    "/api/appointment/get-ucpoming-appointmetns-user"
+    "/api/appointments/get-ucpoming-appointmetns-user"
   );
 }
 export async function getAvailableAppointmentsByDate(

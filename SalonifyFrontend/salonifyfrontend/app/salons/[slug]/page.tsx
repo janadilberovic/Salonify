@@ -17,6 +17,7 @@ import { getSalon, SALONS } from "../../lib/data";
 import BookingPanel from "./BookingPanel";
 import ReviewBlock from "./ReviewBlock";
 import ServiceDetailsList from "./ServiceDetailsList";
+import TrackSalonView from "./TrackSalonView";
 import { getSalonBySlugOrId } from "../../../services/salon";
 export default async function SalonPage({
   params,
@@ -66,6 +67,7 @@ export default async function SalonPage({
   return (
     <>
       <Navbar />
+      <TrackSalonView salonId={salon.id} />
 
       {/* Breadcrumb */}
       <div className="mx-auto max-w-7xl px-6 lg:px-10 pt-8 text-xs text-muted">

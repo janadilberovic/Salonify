@@ -12,6 +12,21 @@ type Props = {
   services: Service[];
 };
 
+const ServiceTypeMap: Record<string, number> = {
+  Haircut: 0,
+  Coloring: 1,
+  Styling: 2,
+  Manicure: 3,
+  Pedicure: 4,
+  Makeup: 5,
+  Massage: 6,
+  Facial: 7,
+  Waxing: 8,
+  SpaTreatment: 9,
+  NailArt: 10,
+  Other: 11,
+};
+
 export default function ServiceDetailsList({ salonId, services }: Props) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
@@ -166,7 +181,21 @@ function getServiceTypeNumber(service: Service) {
     return service.serviceType;
   }
 
+  if (typeof service.serviceType === "string") {
+    const parsed = Number(service.serviceType);
+
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+
+    return ServiceTypeMap[service.serviceType] ?? 11;
+  }
+
   const parsed = Number(service.id);
 
-  return Number.isNaN(parsed) ? 11 : parsed;
+  if (!Number.isNaN(parsed)) {
+    return parsed;
+  }
+
+  return ServiceTypeMap[service.id] ?? 11;
 }

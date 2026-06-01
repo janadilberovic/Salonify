@@ -128,7 +128,7 @@ export default function SalonsPage() {
         const currentMinute = now.getMinutes();
         const currentTime = currentHour * 60 + currentMinute;
 
-        filtered = results.filter((salon) => {
+        filtered = results.filter((salon: any) => {
           if (!salon.openingHours || salon.openingHours.length === 0) {
             return false;
           }
@@ -139,7 +139,7 @@ export default function SalonsPage() {
           const apiDay = dayMap[dayOfWeek];
 
           const todayHours = salon.openingHours.find(
-            (h) =>
+            (h: any) =>
               Number(h.day) === apiDay ||
               h.day === String(apiDay) ||
               (dayOfWeek === 0 && h.day === "0")
@@ -152,7 +152,7 @@ export default function SalonsPage() {
           // Parse hours (format: "09:00 - 17:00" or "09:00-17:00")
           const timeParts = todayHours.hours.includes(" - ")
             ? todayHours.hours.split(" - ")
-            : todayHours.hours.split("-").map((t) => t.trim());
+            : todayHours.hours.split("-").map((t: string) => t.trim());
 
           if (timeParts.length < 2) {
             return false;

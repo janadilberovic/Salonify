@@ -302,6 +302,24 @@ public class SalonController : ControllerBase
     }
 
     [Authorize(Roles = "User,Admin")]
+    [HttpPost("{salonId}/view-salon")]
+    public async Task<IActionResult> TrackViewSalon(string salonId)
+    {
+        var salon = await _salonRepository.GetByIdAsync(salonId);
+
+        if (salon == null)
+            return NotFound(new { message = "Salon nije pronađen." });
+
+        await _activityTrackingService.TrackSalonAsync(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            ActivityType.ViewSalon,
+            salon
+        );
+
+        return NoContent();
+    }
+
+    [Authorize(Roles = "User,Admin")]
     [HttpPost("{salonId}/view-service")]
     public async Task<IActionResult> TrackViewService(
         string salonId,

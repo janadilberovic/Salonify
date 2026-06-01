@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LinkButton } from "./ui";
 import { BellIcon, FlowerIcon, MenuIcon, XIcon } from "./Icons";
-import { getUpcomingAppointmentsForUser } from "@/services/appointment";
+import { getUserAppointments } from "@/services/appointment";
+import type { UserAppointment } from "@/types/appointments";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -21,8 +22,15 @@ export default function Navbar() {
     setName(localStorage.getItem("displayName") || localStorage.getItem("Name"));
   }, []);
   useEffect(() => {
-    getUpcomingAppointmentsForUser()
-      .then((data) => setUpcomingCount(data.length))
+    const storedRole = localStorage.getItem("role");
+
+    if (storedRole !== "User") {
+      setUpcomingCount(0);
+      return;
+    }
+
+    getUserAppointments()
+      .then((data) => setUpcomingCount(countUpcomingAppointments(data)))
       .catch(() => setUpcomingCount(0));
   }, []);
   const isLoggedIn = !!role;
@@ -220,4 +228,45 @@ export default function Navbar() {
       </div>
     </header>
   );
+}
+
+function countUpcomingAppointments(appointments: UserAppointment[]) {
+  return appointments.filter(isUpcomingAppointment).length;
+}
+
+function isUpcomingAppointment(appointment: UserAppointment) {
+  const status = normalizeStatus(appointment.status);
+
+  if (status !== "Pending" && status !== "Approved") {
+    return false;
+  }
+
+  const appointmentDateTime = getAppointmentDateTime(
+    appointment.appointmentDate,
+    appointment.startTime
+  );
+
+  if (!appointmentDateTime) {
+    return true;
+  }
+
+  return appointmentDateTime.getTime() >= Date.now();
+}
+
+function normalizeStatus(status: UserAppointment["status"]) {
+  if (status === 0) return "Pending";
+  if (status === 1) return "Approved";
+  if (status === 2) return "Rejected";
+  if (status === 3) return "Cancelled";
+  if (status === 4) return "Completed";
+
+  return status;
+}
+
+function getAppointmentDateTime(date: string, time: string) {
+  const datePart = String(date).slice(0, 10);
+  const timePart = String(time || "00:00").slice(0, 5);
+  const parsed = new Date(`${datePart}T${timePart}:00`);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
