@@ -17,8 +17,8 @@ import {
   PhoneIcon,
   MapPinIcon,
   SparkleIcon,
-  XIcon,
 } from "../../components/Icons";
+import { showToast } from "../../components/Toast";
 
 import { useMySalon } from "@/hooks/salon/UseMySalon";
 import {
@@ -26,7 +26,17 @@ import {
   updateSalonImage,
   addSalonGalleryImage,
 } from "@/services/salon";
-import { TrashIcon } from "lucide-react";
+const emptyProfileValues = new Set([
+  "Moj salon",
+  "Grad nije unet",
+  "Adresa nije uneta",
+  "Telefon nije unet",
+]);
+
+function editableValue(value?: string | null) {
+  const trimmed = value?.trim() ?? "";
+  return emptyProfileValues.has(trimmed) ? "" : trimmed;
+}
 
 function ProfilePageContent() {
   const { salon, loading, error } = useMySalon();
@@ -51,11 +61,11 @@ function ProfilePageContent() {
     if (!salon) return;
 
     setForm({
-      name: salon.name || "",
-      description: salon.description || "",
-      address: salon.address || "",
-      city: salon.city || "",
-      phone: salon.phone || "",
+      name: editableValue(salon.name),
+      description: editableValue(salon.description),
+      address: editableValue(salon.address),
+      city: editableValue(salon.city),
+      phone: editableValue(salon.phone),
     });
   }, [salon]);
   async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -69,7 +79,7 @@ function ProfilePageContent() {
 
       window.location.reload();
     } catch {
-      alert("Greška pri dodavanju slike.");
+      showToast("Greška pri dodavanju slike.", "error");
     } finally {
       setUploadingGallery(false);
     }
@@ -80,16 +90,16 @@ function ProfilePageContent() {
       setSaving(true);
 
       await updateSalonProfile({
-        name: form.name,
-        description: form.description,
-        address: form.address,
-        city: form.city,
-        phone: form.phone,
+        name: editableValue(form.name),
+        description: editableValue(form.description),
+        address: editableValue(form.address),
+        city: editableValue(form.city),
+        phone: editableValue(form.phone),
       });
 
-      alert("Profil je uspešno sačuvan.");
+      showToast("Profil je uspešno sačuvan.");
     } catch {
-      alert("Greška pri čuvanju profila.");
+      showToast("Greška pri čuvanju profila.", "error");
     } finally {
       setSaving(false);
     }
@@ -106,7 +116,7 @@ function ProfilePageContent() {
 
       window.location.reload();
     } catch {
-      alert("Greška pri promeni slike.");
+      showToast("Greška pri promeni slike.", "error");
     } finally {
       setUploadingImage(false);
     }

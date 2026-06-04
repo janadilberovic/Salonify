@@ -31,82 +31,31 @@ export async function searchSalonReviews(
   params: ReviewSearchParams
 ): Promise<Review[]> {
   try {
-    const allReviews = await apiFetch<Review[]>(
-      `/api/review/get-reviews-for-salon?salonID=${salonId}`
+    const query = new URLSearchParams();
+
+    if (params.minRating !== undefined && params.minRating !== "all") {
+      query.set("minRating", String(params.minRating));
+    }
+
+    if (params.serviceType !== undefined && params.serviceType !== "all") {
+      query.set("serviceType", String(params.serviceType));
+    }
+
+    if (params.sortBy) {
+      query.set("sortBy", params.sortBy);
+    }
+
+    const reviews = await apiFetch<Review[]>(
+      `/api/review/salon/${salonId}/search?${query.toString()}`
     );
 
-    if (!Array.isArray(allReviews)) {
+    if (!Array.isArray(reviews)) {
       return [];
     }
 
-    let filtered = [...allReviews];
-
-    /**
-     * Filtriranje po minimalnoj oceni.
-     * params.minRating može da bude:
-     * - number
-     * - "all"
-     * - undefined
-     */
-    const minRating =
-      params.minRating !== undefined && params.minRating !== "all"
-        ? Number(params.minRating)
-        : undefined;
-
-    if (typeof minRating === "number" && !Number.isNaN(minRating)) {
-      filtered = filtered.filter((review) => review.rating >= minRating);
-    }
-
-    /**
-     * Filtriranje po tipu usluge.
-     *
-     * Ovo sam namerno zakomentarisala jer tvoj Review tip trenutno
-     * NEMA serviceType polje, zato ti puca:
-     *
-     * Property 'serviceType' does not exist on type 'Review'
-     *
-     * Ako backend ne vraća serviceType u recenziji, frontend ne može
-     * da filtrira po tome.
-     */
-    // if (params.serviceType && params.serviceType !== "all") {
-    //   filtered = filtered.filter(
-    //     (review) => review.serviceType === params.serviceType
-    //   );
-    // }
-
-    /**
-     * Sortiranje recenzija.
-     */
-    switch (params.sortBy) {
-      case "oldest":
-        filtered.sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() -
-            new Date(b.createdAt).getTime()
-        );
-        break;
-
-      case "highest":
-        filtered.sort((a, b) => b.rating - a.rating);
-        break;
-
-      case "lowest":
-        filtered.sort((a, b) => a.rating - b.rating);
-        break;
-
-      case "newest":
-      default:
-        filtered.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() -
-            new Date(a.createdAt).getTime()
-        );
-        break;
-    }
-
-    return filtered;
+    return reviews;
   } catch (error) {
-    console.error("Greška pri filtriranju recenzija:", error);
+    console.error("Greska pri filtriranju recenzija:", error);
     return [];
   }
 }

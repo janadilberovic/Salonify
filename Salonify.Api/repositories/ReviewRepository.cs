@@ -48,25 +48,7 @@ public class ReviewRepository
     public async Task<List<ReviewResponseDTO>> GetReviewsBySalon(string salonId)
     {
         var reviews = await _reviews.Find(a => a.SalonId == salonId).SortByDescending(r => r.CreatedAt).ToListAsync();
-        var result = new List<ReviewResponseDTO>();
-
-        foreach (var review in reviews)
-        {
-            var user = await _users.Find(u => u.Id == review.UserId).FirstOrDefaultAsync();
-
-            result.Add(new ReviewResponseDTO
-            {
-                Id = review.Id,
-                Rating = review.Rating,
-                Comment = review.Comment,
-                CreatedAt = review.CreatedAt,
-                UserName = user != null ? user.DisplayName : "Korisnik",
-                ServiceName = review.ServiceType.ToString()
-
-            });
-        }
-
-        return result;
+        return await MapToResponseDtosAsync(reviews);
     }
 
     public async Task<Review?> GetByUserAndSalon(string userID, string salonID)
@@ -123,7 +105,7 @@ public class ReviewRepository
                 r.ServiceType == serviceType)
             .AnyAsync();
     }
-    public async Task<List<Review>> SearchForSalonAsync(
+    public async Task<List<ReviewResponseDTO>> SearchForSalonAsync(
     string salonId,
     int? minRating,
     ServiceType? serviceType,
@@ -154,6 +136,33 @@ public class ReviewRepository
         _ => query.SortByDescending(r => r.CreatedAt)
     };
 
-    return await query.ToListAsync();
+    var reviews = await query.ToListAsync();
+    return await MapToResponseDtosAsync(reviews);
+    }
+
+    private async Task<List<ReviewResponseDTO>> MapToResponseDtosAsync(List<Review> reviews)
+    {
+        var result = new List<ReviewResponseDTO>();
+
+        foreach (var review in reviews)
+        {
+            var user = await _users.Find(u => u.Id == review.UserId).FirstOrDefaultAsync();
+
+            result.Add(new ReviewResponseDTO
+            {
+                Id = review.Id,
+                Rating = review.Rating,
+                Comment = review.Comment,
+                CreatedAt = review.CreatedAt,
+                AppointmentId = review.AppointmentId,
+                UserName = user != null ? user.DisplayName : "Korisnik",
+                ServiceName = string.IsNullOrWhiteSpace(review.ServiceName)
+                    ? review.ServiceType.ToString()
+                    : review.ServiceName,
+                ServiceType = review.ServiceType
+            });
+        }
+
+        return result;
     }
 }

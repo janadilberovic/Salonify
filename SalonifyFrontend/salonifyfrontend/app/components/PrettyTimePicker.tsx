@@ -33,70 +33,77 @@ export default function PrettyTimePicker({ value, onChange }: Props) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="w-full h-12 rounded-2xl border border-[var(--border)] bg-white px-4 text-sm font-medium text-foreground shadow-sm flex items-center justify-between hover:border-primary transition"
+        className="flex h-12 w-full items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-3 text-sm font-medium text-foreground shadow-sm transition hover:border-primary hover:shadow-soft"
       >
-        <span className="inline-flex items-center gap-2">
-          <span className="inline-flex size-7 items-center justify-center rounded-full bg-primary-soft text-primary">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 2" />
-            </svg>
-          </span>
-
-          {value || "Izaberi vreme"}
+        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </svg>
         </span>
 
-        <span className="text-xs text-muted">Promeni</span>
+        <span className="truncate text-left text-base font-semibold">
+          {value || "Izaberi vreme"}
+        </span>
       </button>
 
       {open && (
-        <div className="absolute left-0 z-50 mt-3 w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-[var(--border)] bg-white p-4 shadow-lift">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-xl font-semibold text-foreground">
-              Izaberi vreme
-            </h3>
+        <div className="absolute left-0 z-50 mt-3 w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[1.75rem] border border-white/80 bg-white shadow-lift">
+          <div className="border-b border-[var(--border)] bg-gradient-to-br from-white via-[#fdf7fb] to-primary-soft/50 p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                  Radno vreme
+                </p>
+                <h3 className="mt-1 font-display text-xl font-semibold text-foreground">
+                  Izaberi vreme
+                </h3>
+              </div>
 
-            {value && (
-              <button
-                type="button"
-                onClick={() => {
-                  onChange("");
-                  setOpen(false);
-                }}
-                className="text-xs font-semibold text-muted hover:text-primary transition"
-              >
-                Obriši
-              </button>
-            )}
+              {value && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange("");
+                    setOpen(false);
+                  }}
+                  className="rounded-full border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold text-muted transition hover:border-primary hover:text-primary"
+                >
+                  Obriši
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 max-h-72 overflow-y-auto pr-1">
-            {slots.map((slot) => (
-              <button
-                key={slot}
-                type="button"
-                onClick={() => {
-                  onChange(slot);
-                  setOpen(false);
-                }}
-                className={`h-10 rounded-full border text-sm font-medium transition ${
-                  value === slot
-                    ? "bg-primary text-white border-primary shadow-soft"
-                    : "bg-white border-[var(--border)] text-foreground hover:border-primary hover:bg-primary-soft hover:text-primary"
-                }`}
-              >
-                {slot}
-              </button>
-            ))}
+          <div className="p-4">
+            <div className="grid max-h-72 grid-cols-3 gap-2 overflow-y-auto pr-1">
+              {slots.map((slot) => (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => {
+                    onChange(slot);
+                    setOpen(false);
+                  }}
+                  className={`h-11 rounded-2xl border text-sm font-semibold transition ${
+                    value === slot
+                      ? "border-primary bg-primary text-white shadow-soft"
+                      : "border-[var(--border)] bg-[var(--background-soft)] text-foreground hover:border-primary hover:bg-white hover:text-primary"
+                  }`}
+                >
+                  {slot}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

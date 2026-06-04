@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api";
 import { mapSalonApiToUI } from "@/mappers/salon";
 import { SalonApi,SalonSearchParams,UpdateSalonProfileRequest, WorkingDayApi } from "@/types/Salon";
 
+type SalonSearchResponse = SalonApi[] | { data?: SalonApi[] };
 
 export async function getMySalon() {
   const data= await apiFetch<SalonApi>("/api/salon/me");
@@ -85,10 +86,10 @@ export async function searchSalons(params: SalonSearchParams) {
   if (params.serviceType) query.append("serviceType", params.serviceType);
   if (params.minPrice != null) query.append("minPrice", String(params.minPrice));
   if (params.maxPrice != null) query.append("maxPrice", String(params.maxPrice));
-  if (params.date) query.append("date", params.date);
+  if (params.date) query.append("day", params.date);
   if (params.time) query.append("time", params.time);
 
-  const data = await apiFetch<any>(`/api/salon/search?${query.toString()}`);
+  const data = await apiFetch<SalonSearchResponse>(`/api/salon/search?${query.toString()}`);
 
   const salons = Array.isArray(data) ? data : data.data ?? [];
 

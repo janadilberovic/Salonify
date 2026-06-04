@@ -1,17 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SalonCard from "../components/SalonCard";
 import { EyebrowLabel } from "../components/ui";
-import { SearchIcon, MapPinIcon, SparkleIcon } from "../components/Icons";
+import {
+  SearchIcon,
+  MapPinIcon,
+  SparkleIcon,
+  ChevronRightIcon,
+} from "../components/Icons";
 import { searchSalons, getAllSalons } from "@/services/salon";
+import { getAverageReviewsForSalon } from "@/services/reviews";
 import PrettyDatePicker from "../components/PrettyDatePicker";
 import PrettyTimePicker from "../components/PrettyTimePicker";
 import PrettyCitySelect from "../components/PrettyCitySelect";
 
 const SORTS = ["Najpopularnije", "Najbolje ocenjeni", "Najnoviji"];
+const SALONS_PER_PAGE = 6;
 
 const SERVICE_TYPES = [
   { value: "Haircut", label: "Šišanje" },
@@ -38,8 +45,10 @@ function getTodayDateOnlyString() {
 }
 
 export default function SalonsPage() {
+  const resultsRef = useRef<HTMLElement | null>(null);
   const [salons, setSalons] = useState<any[]>([]);
   const [filteredSalons, setFilteredSalons] = useState<any[]>([]);
+  const [salonRatings, setSalonRatings] = useState<Record<string, number>>({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const [query, setQuery] = useState("");
@@ -56,6 +65,8 @@ export default function SalonsPage() {
   const [searching, setSearching] = useState(false);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [openNow, setOpenNow] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageDirection, setPageDirection] = useState<"next" | "prev">("next");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -87,6 +98,7 @@ export default function SalonsPage() {
 
       setSalons(data);
       setFilteredSalons(data);
+      loadSalonRatings(data);
     } catch (error) {
       console.error("Greška pri učitavanju salona:", error);
     } finally {
@@ -169,6 +181,7 @@ export default function SalonsPage() {
       }
 
       setFilteredSalons(filtered);
+      loadSalonRatings(filtered);
     } catch (error) {
       console.error("Greška pri pretrazi:", error);
       setFilteredSalons([]);
@@ -185,6 +198,34 @@ export default function SalonsPage() {
     setDate(null);
     setOpenNow(false);
     setTime(null);
+  }
+
+  async function loadSalonRatings(list: any[]) {
+    const uniqueSalons = Array.from(
+      new Map(
+        list
+          .filter((salon) => salon?.id)
+          .map((salon) => [salon.id, salon]),
+      ).values(),
+    );
+
+    if (uniqueSalons.length === 0) return;
+
+    const ratings = await Promise.all(
+      uniqueSalons.map(async (salon: any) => {
+        try {
+          const rating = await getAverageReviewsForSalon(salon.id);
+          return [salon.id, rating ?? 0] as const;
+        } catch {
+          return [salon.id, 0] as const;
+        }
+      }),
+    );
+
+    setSalonRatings((prev) => ({
+      ...prev,
+      ...Object.fromEntries(ratings),
+    }));
   }
 
   const cities = useMemo(() => {
@@ -208,7 +249,11 @@ export default function SalonsPage() {
     }
 
     if (sort === "Najbolje ocenjeni") {
-      list = list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      list = list.sort(
+        (a, b) =>
+          (salonRatings[b.id] ?? b.rating ?? 0) -
+          (salonRatings[a.id] ?? a.rating ?? 0),
+      );
     }
 
     if (sort === "Najnoviji") {
@@ -216,7 +261,43 @@ export default function SalonsPage() {
     }
 
     return list;
-  }, [filteredSalons, sort, query]);
+  }, [filteredSalons, sort, query, salonRatings]);
+
+  const pageCount = Math.max(1, Math.ceil(sorted.length / SALONS_PER_PAGE));
+  const visibleSalons = sorted.slice(
+    currentPage * SALONS_PER_PAGE,
+    currentPage * SALONS_PER_PAGE + SALONS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(0);
+    setPageDirection("next");
+  }, [query, city, serviceType, minPrice, maxPrice, date, time, openNow, sort]);
+
+  useEffect(() => {
+    if (currentPage >= pageCount) {
+      setCurrentPage(pageCount - 1);
+    }
+  }, [currentPage, pageCount]);
+
+  function goToPage(page: number) {
+    if (page < 0 || page >= pageCount || page === currentPage) return;
+
+    setPageDirection(page > currentPage ? "next" : "prev");
+    setCurrentPage(page);
+    scrollToResults();
+  }
+
+  function scrollToResults() {
+    const top = resultsRef.current
+      ? resultsRef.current.getBoundingClientRect().top + window.scrollY - 96
+      : 0;
+
+    window.scrollTo({
+      top: Math.max(top, 0),
+      behavior: "smooth",
+    });
+  }
 
   const hasActiveFilters =
     city ||
@@ -524,7 +605,10 @@ export default function SalonsPage() {
         </div>
       </section>
 
-      <section className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10 mt-10">
+      <section
+        ref={resultsRef}
+        className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10 mt-10"
+      >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <p className="text-sm text-muted">
             Pronađeno{" "}
@@ -557,11 +641,82 @@ export default function SalonsPage() {
         ) : sorted.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sorted.map((s, i) => (
-              <SalonCard key={s.id} salon={s} featured={i === 0} />
-            ))}
-          </div>
+          <>
+            <div
+              key={currentPage}
+              className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${
+                pageDirection === "next"
+                  ? "salon-page-enter-next"
+                  : "salon-page-enter-prev"
+              }`}
+            >
+              {visibleSalons.map((s, i) => (
+                <SalonCard
+                  key={s.id}
+                  salon={s}
+                  featured={currentPage === 0 && i === 0}
+                />
+              ))}
+            </div>
+
+            {pageCount > 1 && (
+              <div className="mt-8 flex flex-col items-center justify-between gap-4 sm:flex-row">
+                <p className="text-sm text-muted">
+                  Prikazano{" "}
+                  <span className="font-semibold text-foreground">
+                    {currentPage * SALONS_PER_PAGE + 1}-
+                    {Math.min(
+                      currentPage * SALONS_PER_PAGE + visibleSalons.length,
+                      sorted.length,
+                    )}
+                  </span>{" "}
+                  od {sorted.length}
+                </p>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 0}
+                    aria-label="Prethodna strana"
+                    className="grid size-10 place-items-center rounded-full border border-[var(--border)] bg-white text-muted shadow-softer transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <ChevronRightIcon
+                      width={18}
+                      height={18}
+                      className="rotate-180"
+                    />
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: pageCount }).map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => goToPage(index)}
+                        aria-label={`Strana ${index + 1}`}
+                        className={`h-2.5 rounded-full transition-all ${
+                          currentPage === index
+                            ? "w-8 bg-primary"
+                            : "w-2.5 bg-primary-soft hover:bg-primary/50"
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === pageCount - 1}
+                    aria-label="Sledeća strana"
+                    className="grid size-10 place-items-center rounded-full border border-[var(--border)] bg-white text-muted shadow-softer transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <ChevronRightIcon width={18} height={18} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </section>
 

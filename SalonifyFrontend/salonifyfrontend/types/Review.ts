@@ -9,6 +9,7 @@ export type Review = {
   appointmentId: string;
   userName?: string;
   serviceName?: string;
+  serviceType?: number | string;
 };
 export type CreateReviewPayload = {
   appointmentId: string;

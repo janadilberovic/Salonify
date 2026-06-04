@@ -3,54 +3,77 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LinkButton } from "./ui";
+import {
+  getAppointmentsForSalon,
+  getUserAppointments,
+} from "@/services/appointment";
+import type { AppointmentApi, UserAppointment } from "@/types/appointments";
 import { BellIcon, FlowerIcon, MenuIcon, XIcon } from "./Icons";
-import { getUserAppointments } from "@/services/appointment";
-import type { UserAppointment } from "@/types/appointments";
+import { LinkButton } from "./ui";
+
+type NotificationSummary = {
+  count: number;
+  pending: number;
+  today: number;
+  upcoming: number;
+};
+
+const emptyNotifications = (): NotificationSummary => ({
+  count: 0,
+  pending: 0,
+  today: 0,
+  upcoming: 0,
+});
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [upcomingCount, setUpcomingCount] = useState(0);
+  const [notificationSummary, setNotificationSummary] =
+    useState<NotificationSummary>(emptyNotifications());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
-    setRole(localStorage.getItem("role"));
-    setName(localStorage.getItem("displayName") || localStorage.getItem("Name"));
-  }, []);
-  useEffect(() => {
     const storedRole = localStorage.getItem("role");
 
-    if (storedRole !== "User") {
-      setUpcomingCount(0);
+    setRole(storedRole);
+    setName(localStorage.getItem("displayName") || localStorage.getItem("Name"));
+
+    if (storedRole === "Salon" || storedRole === "Admin") {
+      getAppointmentsForSalon()
+        .then((data) => setNotificationSummary(countSalonNotifications(data)))
+        .catch(() => setNotificationSummary(emptyNotifications()));
       return;
     }
 
-    getUserAppointments()
-      .then((data) => setUpcomingCount(countUpcomingAppointments(data)))
-      .catch(() => setUpcomingCount(0));
+    if (storedRole === "User") {
+      getUserAppointments()
+        .then((data) => setNotificationSummary(countUserNotifications(data)))
+        .catch(() => setNotificationSummary(emptyNotifications()));
+      return;
+    }
+
+    setNotificationSummary(emptyNotifications());
   }, []);
+
   const isLoggedIn = !!role;
   const isSalon = role === "Salon";
   const isUser = role === "User";
   const isAdmin = role === "Admin";
+  const notificationsHref =
+    isSalon || isAdmin ? "/dashboard/appointments" : "/appointments";
 
   const NAV = [
     { href: "/salons", label: "Saloni", show: isSalon || isUser || isAdmin },
-
     { href: "/appointments", label: "Moji termini", show: isUser },
-
     { href: "/account", label: "Moj profil", show: isUser },
-
     { href: "/dashboard", label: "Dashboard", show: isSalon || isAdmin },
-
     { href: "/reviews", label: "Recenzije", show: isSalon || isAdmin },
-
-    { href: "/recommended", label: "Preporučeno", show: isUser },
+    { href: "/recommended", label: "Preporuceno", show: isUser },
   ].filter((item) => item.show);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -66,6 +89,8 @@ export default function Navbar() {
     setRole(null);
     setName(null);
     setOpen(false);
+    setNotificationsOpen(false);
+    setNotificationSummary(emptyNotifications());
 
     router.push("/");
   };
@@ -73,9 +98,9 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40">
       <div className="glass border-b border-white/40">
-        <div className="mx-auto max-w-7xl px-6 lg:px-10 h-18 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <span className="inline-flex items-center justify-center size-9 rounded-2xl bg-gradient-to-br from-primary to-[#d7a2ec] text-white shadow-soft group-hover:scale-105 transition">
+        <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
+          <Link href="/" className="group flex items-center gap-2.5">
+            <span className="inline-flex size-9 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-[#d7a2ec] text-white shadow-soft transition group-hover:scale-105">
               <FlowerIcon width={20} height={20} />
             </span>
 
@@ -84,7 +109,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1 bg-white/70 rounded-full p-1 border border-white/80 shadow-softer">
+          <nav className="hidden items-center gap-1 rounded-full border border-white/80 bg-white/70 p-1 shadow-softer md:flex">
             {NAV.map((item) => {
               const active =
                 pathname === item.href ||
@@ -94,10 +119,10 @@ export default function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                     active
                       ? "bg-primary text-white shadow-soft"
-                      : "text-foreground/80 hover:text-primary hover:bg-primary-soft/60"
+                      : "text-foreground/80 hover:bg-primary-soft/60 hover:text-primary"
                   }`}
                 >
                   {item.label}
@@ -106,42 +131,75 @@ export default function Navbar() {
             })}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             {isLoggedIn && (
-              <button
-                aria-label="Obaveštenja"
-                className="relative size-10 rounded-full bg-white border border-[var(--border)] hover:border-primary hover:text-primary grid place-items-center transition"
-                onClick={() => setNotificationsOpen((v) => !v)}
-              >
-                <BellIcon width={18} height={18} />
-                {upcomingCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-[11px] font-bold grid place-items-center">
-                    {upcomingCount}
-                  </span>
-                )}
-              </button>
-            )}
-            {notificationsOpen && (
-              <div className="absolute right-0 top-full translate-y-4 w-80 rounded-3xl bg-white border border-[var(--border)] shadow-lift p-5 z-50">
-                <p className="font-display text-lg font-semibold">Podsetnik</p>
-
-                <p className="mt-2 text-sm text-muted leading-relaxed">
-                  Imate{" "}
-                  <span className="font-semibold text-primary">
-                    {upcomingCount}
-                  </span>{" "}
-                  predstojećih termina.
-                </p>
-
-                <Link
-                  href="/appointments"
-                  onClick={() => setNotificationsOpen(false)}
-                  className="mt-4 inline-flex w-full justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-hover transition"
+              <div className="relative">
+                <button
+                  aria-label="Obavestenja"
+                  className={`relative grid size-10 place-items-center rounded-full border bg-white transition ${
+                    notificationsOpen
+                      ? "border-primary text-primary shadow-soft"
+                      : "border-[var(--border)] hover:border-primary hover:text-primary"
+                  }`}
+                  onClick={() => setNotificationsOpen((value) => !value)}
                 >
-                  Pogledaj termine
-                </Link>
+                  <BellIcon width={18} height={18} />
+                  {notificationSummary.count > 0 && (
+                    <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
+                      {notificationSummary.count}
+                    </span>
+                  )}
+                </button>
+
+                {notificationsOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-3 w-80 overflow-hidden rounded-3xl border border-white/80 bg-white p-3 shadow-lift">
+                    {notificationSummary.count > 0 ? (
+                      <div className="space-y-2">
+                        {(isSalon || isAdmin) &&
+                          notificationSummary.pending > 0 && (
+                            <NotificationRow
+                              title={`${notificationSummary.pending} termina za prihvatanje`}
+                              text="Novi zahtevi cekaju odgovor salona."
+                            />
+                          )}
+
+                        {(isSalon || isAdmin) && notificationSummary.today > 0 && (
+                          <NotificationRow
+                            title={`${notificationSummary.today} termina danas`}
+                            text="Pogledaj raspored za danasnji dan."
+                          />
+                        )}
+
+                        {isUser && notificationSummary.upcoming > 0 && (
+                          <NotificationRow
+                            title={`${notificationSummary.upcoming} predstojecih termina`}
+                            text="Tvoji aktivni i zakazani termini."
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl bg-[var(--background-soft)] px-4 py-5 text-center">
+                        <p className="text-sm font-semibold text-foreground">
+                          Nema novih obavestenja
+                        </p>
+                        <p className="mt-1 text-xs text-muted">
+                          Novi termini ce se pojaviti ovde.
+                        </p>
+                      </div>
+                    )}
+
+                    <Link
+                      href={notificationsHref}
+                      onClick={() => setNotificationsOpen(false)}
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                    >
+                      Pogledaj termine
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
+
             {isLoggedIn ? (
               <>
                 <span className="text-sm font-medium text-foreground/80">
@@ -151,7 +209,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="text-sm font-medium text-foreground/80 hover:text-primary transition px-2"
+                  className="px-2 text-sm font-medium text-foreground/80 transition hover:text-primary"
                 >
                   Odjavi se
                 </button>
@@ -160,7 +218,7 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="text-sm font-medium text-foreground/80 hover:text-primary transition px-2"
+                  className="px-2 text-sm font-medium text-foreground/80 transition hover:text-primary"
                 >
                   Prijavi se
                 </Link>
@@ -173,8 +231,8 @@ export default function Navbar() {
           </div>
 
           <button
-            className="md:hidden size-10 rounded-full bg-white border border-[var(--border)] grid place-items-center"
-            onClick={() => setOpen((v) => !v)}
+            className="grid size-10 place-items-center rounded-full border border-[var(--border)] bg-white md:hidden"
+            onClick={() => setOpen((value) => !value)}
             aria-label="Meni"
           >
             {open ? <XIcon /> : <MenuIcon />}
@@ -182,13 +240,13 @@ export default function Navbar() {
         </div>
 
         {open && (
-          <div className="md:hidden px-6 pb-5 space-y-1 bg-white/80">
+          <div className="space-y-1 bg-white/80 px-6 pb-5 md:hidden">
             {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="block px-4 py-3 rounded-2xl text-sm font-medium hover:bg-primary-soft/60"
+                className="block rounded-2xl px-4 py-3 text-sm font-medium hover:bg-primary-soft/60"
               >
                 {item.label}
               </Link>
@@ -199,7 +257,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="flex-1 text-center h-11 rounded-full bg-primary text-white text-sm font-medium"
+                  className="h-11 flex-1 rounded-full bg-primary text-center text-sm font-medium text-white"
                 >
                   Odjavi se
                 </button>
@@ -208,7 +266,7 @@ export default function Navbar() {
                   <Link
                     href="/login"
                     onClick={() => setOpen(false)}
-                    className="flex-1 text-center h-11 leading-[2.75rem] rounded-full bg-white border border-[var(--border-strong)] text-sm font-medium"
+                    className="h-11 flex-1 rounded-full border border-[var(--border-strong)] bg-white text-center text-sm font-medium leading-[2.75rem]"
                   >
                     Prijavi se
                   </Link>
@@ -216,7 +274,7 @@ export default function Navbar() {
                   <Link
                     href="/register"
                     onClick={() => setOpen(false)}
-                    className="flex-1 text-center h-11 leading-[2.75rem] rounded-full bg-primary text-white text-sm font-medium"
+                    className="h-11 flex-1 rounded-full bg-primary text-center text-sm font-medium leading-[2.75rem] text-white"
                   >
                     Registruj se
                   </Link>
@@ -230,8 +288,56 @@ export default function Navbar() {
   );
 }
 
-function countUpcomingAppointments(appointments: UserAppointment[]) {
-  return appointments.filter(isUpcomingAppointment).length;
+function NotificationRow({
+  title,
+  text,
+}: {
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--background-soft)] px-4 py-3">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-xs text-muted">{text}</p>
+    </div>
+  );
+}
+
+function countUserNotifications(
+  appointments: UserAppointment[]
+): NotificationSummary {
+  const upcoming = appointments.filter(isUpcomingAppointment).length;
+
+  return {
+    count: upcoming,
+    pending: 0,
+    today: 0,
+    upcoming,
+  };
+}
+
+function countSalonNotifications(
+  appointments: AppointmentApi[]
+): NotificationSummary {
+  const todayDate = getTodayDateKey();
+  const pending = appointments.filter(
+    (appointment) => normalizeStatus(appointment.status) === "Pending"
+  ).length;
+  const today = appointments.filter((appointment) => {
+    const status = normalizeStatus(appointment.status);
+
+    return (
+      appointment.appointmentDate.slice(0, 10) === todayDate &&
+      (status === "Pending" || status === "Approved")
+    );
+  }).length;
+
+  return {
+    count: pending + today,
+    pending,
+    today,
+    upcoming: 0,
+  };
 }
 
 function isUpcomingAppointment(appointment: UserAppointment) {
@@ -254,11 +360,13 @@ function isUpcomingAppointment(appointment: UserAppointment) {
 }
 
 function normalizeStatus(status: UserAppointment["status"]) {
-  if (status === 0) return "Pending";
-  if (status === 1) return "Approved";
-  if (status === 2) return "Rejected";
-  if (status === 3) return "Cancelled";
-  if (status === 4) return "Completed";
+  const normalized = String(status);
+
+  if (normalized === "0") return "Pending";
+  if (normalized === "1") return "Approved";
+  if (normalized === "2") return "Rejected";
+  if (normalized === "3") return "Cancelled";
+  if (normalized === "4") return "Completed";
 
   return status;
 }
@@ -269,4 +377,13 @@ function getAppointmentDateTime(date: string, time: string) {
   const parsed = new Date(`${datePart}T${timePart}:00`);
 
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getTodayDateKey() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }

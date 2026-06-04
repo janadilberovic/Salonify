@@ -189,13 +189,20 @@ public class SalonRepository
         var result = salons.Select(s => new SalonSearchResultDto
         {
             Id = s.Id,
+            Name = s.Name,
             UserId = s.UserId,
             Description = s.Description,
             Address = s.Address,
             City = s.City,
             Phone = s.Phone,
-            // WorkingHours = s.WorkingHours,
             ImageUrl = s.ImageUrl,
+            WorkingDays = s.WorkingDays.Select(wd => new WorkingDaysDTO
+            {
+                Day = wd.Day.ToString(),
+                StartTime = wd.StartTime?.ToString(@"hh\:mm"),
+                EndTime = wd.EndTime?.ToString(@"hh\:mm"),
+                IsClosed = wd.IsClosed
+            }).ToList(),
             Services = s.Services.Where(serv => serv.ServiceType == parsedServiceType)
                                 .Select(serv => new SalonServiceResponseDTO
                                 {
@@ -252,13 +259,20 @@ public class SalonRepository
         return result.Select(s => new SalonSearchResultDto
         {
             Id = s.Id,
+            Name = s.Name,
             UserId = s.UserId,
             Description = s.Description,
             Address = s.Address,
             City = s.City,
             Phone = s.Phone,
-            WorkingHours = s.WorkingDays,
             ImageUrl = s.ImageUrl,
+            WorkingDays = s.WorkingDays.Select(wd => new WorkingDaysDTO
+            {
+                Day = wd.Day.ToString(),
+                StartTime = wd.StartTime?.ToString(@"hh\:mm"),
+                EndTime = wd.EndTime?.ToString(@"hh\:mm"),
+                IsClosed = wd.IsClosed
+            }).ToList(),
             Services = s.Services.Select(serv => new SalonServiceResponseDTO
             {
                 Name = serv.Name,
@@ -318,13 +332,20 @@ public class SalonRepository
         return result.Select(s => new SalonSearchResultDto
         {
             Id = s.Id,
+            Name = s.Name,
             UserId = s.UserId,
             Description = s.Description,
             Address = s.Address,
             City = s.City,
             Phone = s.Phone,
-            WorkingHours = s.WorkingDays,
             ImageUrl = s.ImageUrl,
+            WorkingDays = s.WorkingDays.Select(wd => new WorkingDaysDTO
+            {
+                Day = wd.Day.ToString(),
+                StartTime = wd.StartTime?.ToString(@"hh\:mm"),
+                EndTime = wd.EndTime?.ToString(@"hh\:mm"),
+                IsClosed = wd.IsClosed
+            }).ToList(),
             Services = s.Services.Select(serv => new SalonServiceResponseDTO
             {
                 Name = serv.Name,

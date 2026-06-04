@@ -14,7 +14,7 @@ export type SalonApi = {
 };
 
 export type WorkingDayApi = {
-  day: number;
+  day: number | string;
   startTime: string | null;
   endTime: string | null;
   isClosed: boolean;

@@ -24,6 +24,34 @@ const SERVICE_TYPE_LABELS: Record<number, string> = {
   11: "Ostalo",
 };
 
+const SERVICE_TYPE_VALUES: Record<string, number> = {
+  haircut: 0,
+  coloring: 1,
+  styling: 2,
+  manicure: 3,
+  pedicure: 4,
+  makeup: 5,
+  massage: 6,
+  facial: 7,
+  waxing: 8,
+  spatreatment: 9,
+  nailart: 10,
+  other: 11,
+};
+
+function getServiceTypeNumber(value?: string | number) {
+  if (typeof value === "number") return value;
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (!Number.isNaN(parsed)) return parsed;
+
+    return SERVICE_TYPE_VALUES[value.trim().toLowerCase()];
+  }
+
+  return undefined;
+}
+
 export default function ReviewBlock({
   salonId,
   reviews,
@@ -61,12 +89,9 @@ export default function ReviewBlock({
     const unique = new Map<number, string>();
 
     availableServices.forEach((service) => {
-      const serviceTypeNumber =
-        typeof service.serviceType === "number"
-          ? service.serviceType
-          : Number(service.serviceType);
+      const serviceTypeNumber = getServiceTypeNumber(service.serviceType);
 
-      if (Number.isNaN(serviceTypeNumber)) return;
+      if (serviceTypeNumber === undefined) return;
 
       unique.set(
         serviceTypeNumber,
@@ -90,6 +115,16 @@ export default function ReviewBlock({
     serviceOptions.find((option) => option.value === serviceFilter)?.label ||
     "Sve usluge";
 
+  const selectedServiceNames = useMemo(() => {
+    if (serviceFilter === "all") return [];
+
+    return availableServices
+      .filter((service) => getServiceTypeNumber(service.serviceType) === serviceFilter)
+      .flatMap((service) => [service.name, service.serviceName])
+      .filter(Boolean)
+      .map((value) => String(value).trim().toLowerCase());
+  }, [availableServices, serviceFilter]);
+
   const hasActiveFilters =
     minRatingFilter !== "all" ||
     serviceFilter !== "all" ||
@@ -100,6 +135,24 @@ export default function ReviewBlock({
     setServiceFilter("all");
     setSortFilter("newest");
     setServiceMenuOpen(false);
+  }
+
+  function applyServiceFilter(data: Review[]) {
+    if (serviceFilter === "all") return data;
+
+    return data.filter((review) => {
+      const reviewServiceType = getServiceTypeNumber(review.serviceType);
+
+      if (reviewServiceType === serviceFilter) {
+        return true;
+      }
+
+      const reviewServiceName = review.serviceName?.trim().toLowerCase();
+
+      return Boolean(
+        reviewServiceName && selectedServiceNames.includes(reviewServiceName)
+      );
+    });
   }
 
   useEffect(() => {
@@ -139,31 +192,7 @@ export default function ReviewBlock({
           sortBy: sortFilter,
         });
 
-        let filtered = data;
-
-        if (serviceFilter !== "all") {
-          const selectedService = availableServices.find((s) => {
-            const currentServiceType =
-              typeof s.serviceType === "number"
-                ? s.serviceType
-                : Number(s.serviceType);
-
-            return currentServiceType === serviceFilter;
-          });
-
-          if (selectedService) {
-            const serviceName =
-              selectedService.name || selectedService.serviceName || "";
-
-            filtered = data.filter(
-              (r) =>
-                r.serviceName === serviceName ||
-                r.serviceName === selectedService.serviceName
-            );
-          }
-        }
-
-        setDisplayedReviews(filtered);
+        setDisplayedReviews(applyServiceFilter(data));
       } catch (error) {
         console.error("Greška pri filtriranju recenzija:", error);
         setDisplayedReviews(reviews);
@@ -209,31 +238,7 @@ export default function ReviewBlock({
         sortBy: sortFilter,
       });
 
-      let filtered = data;
-
-      if (serviceFilter !== "all") {
-        const selectedService = availableServices.find((s) => {
-          const currentServiceType =
-            typeof s.serviceType === "number"
-              ? s.serviceType
-              : Number(s.serviceType);
-
-          return currentServiceType === serviceFilter;
-        });
-
-        if (selectedService) {
-          const serviceName =
-            selectedService.name || selectedService.serviceName || "";
-
-          filtered = data.filter(
-            (r) =>
-              r.serviceName === serviceName ||
-              r.serviceName === selectedService.serviceName
-          );
-        }
-      }
-
-      setDisplayedReviews(filtered);
+      setDisplayedReviews(applyServiceFilter(data));
     } catch (error) {
       console.error("Greška pri ponovnom učitavanju recenzija:", error);
       setDisplayedReviews(reviews);
@@ -278,10 +283,200 @@ export default function ReviewBlock({
     }
   }
 
+  function FilterPanel() {
+    return (
+      <div className="w-full rounded-[28px] border border-[var(--border)] bg-white p-5 shadow-softer">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                Filteri recenzija
+              </h3>
+
+              <p className="mt-1 text-xs text-muted">
+                Prikažite iskustva po oceni, usluzi ili datumu.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {filterLoading && (
+                <span className="rounded-full bg-[var(--background-soft)] px-3 py-1.5 text-xs font-medium text-muted">
+                  Učitavanje...
+                </span>
+              )}
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="rounded-full border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-medium text-muted transition hover:border-primary/40 hover:text-primary"
+                >
+                  Resetuj
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+                Ocena
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: "all" as const, label: "Sve" },
+                  { value: 5 as const, label: "5★" },
+                  { value: 4 as const, label: "4+ ★" },
+                  { value: 3 as const, label: "3+ ★" },
+                  { value: 2 as const, label: "2+ ★" },
+                  { value: 1 as const, label: "1+ ★" },
+                ].map((option) => {
+                  const active = minRatingFilter === option.value;
+
+                  return (
+                    <button
+                      key={option.label}
+                      type="button"
+                      onClick={() => setMinRatingFilter(option.value)}
+                      className={[
+                        "rounded-full border px-3.5 py-2 text-xs font-semibold transition",
+                        active
+                          ? "border-primary bg-primary text-white shadow-sm"
+                          : "border-[var(--border)] bg-[var(--background-soft)] text-muted hover:border-primary/40 hover:bg-white hover:text-primary",
+                      ].join(" ")}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div className="relative">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+                  Usluga
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setServiceMenuOpen((prev) => !prev)}
+                  className={[
+                    "flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition",
+                    serviceMenuOpen
+                      ? "border-primary/50 bg-white shadow-sm"
+                      : "border-[var(--border)] bg-[var(--background-soft)] hover:border-primary/40 hover:bg-white",
+                  ].join(" ")}
+                >
+                  <span className="min-w-0 truncate text-sm font-semibold text-foreground">
+                    {selectedServiceLabel}
+                  </span>
+
+                  <span
+                    className={[
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-sm transition",
+                      serviceMenuOpen ? "rotate-180" : "",
+                    ].join(" ")}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M5 7.5L10 12.5L15 7.5"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </button>
+
+                {serviceMenuOpen && (
+                  <div className="absolute left-0 right-0 z-30 mt-2 overflow-hidden rounded-2xl border border-[var(--border)] bg-white p-2 shadow-soft">
+                    <div className="max-h-60 overflow-y-auto pr-1">
+                      {serviceOptions.map((service) => {
+                        const active = serviceFilter === service.value;
+
+                        return (
+                          <button
+                            key={String(service.value)}
+                            type="button"
+                            onClick={() => {
+                              setServiceFilter(service.value);
+                              setServiceMenuOpen(false);
+                            }}
+                            className={[
+                              "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium transition",
+                              active
+                                ? "bg-primary text-white shadow-sm"
+                                : "text-foreground hover:bg-[var(--background-soft)] hover:text-primary",
+                            ].join(" ")}
+                          >
+                            <span className="truncate">{service.label}</span>
+
+                            {active && (
+                              <span className="ml-3 text-xs font-semibold">
+                                ✓
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+                  Datum
+                </p>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSortFilter("newest")}
+                    className={[
+                      "rounded-full border px-4 py-2 text-xs font-semibold transition",
+                      sortFilter === "newest"
+                        ? "border-primary bg-primary text-white shadow-sm"
+                        : "border-[var(--border)] bg-[var(--background-soft)] text-muted hover:border-primary/40 hover:bg-white hover:text-primary",
+                    ].join(" ")}
+                  >
+                    Najnovije
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSortFilter("oldest")}
+                    className={[
+                      "rounded-full border px-4 py-2 text-xs font-semibold transition",
+                      sortFilter === "oldest"
+                        ? "border-primary bg-primary text-white shadow-sm"
+                        : "border-[var(--border)] bg-[var(--background-soft)] text-muted hover:border-primary/40 hover:bg-white hover:text-primary",
+                    ].join(" ")}
+                  >
+                    Najstarije
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section
       id="reviews"
-      className="mx-auto grid w-full max-w-6xl scroll-mt-28 gap-8 px-4 lg:grid-cols-[0.85fr_1.15fr]"
+      className="grid w-full scroll-mt-28 gap-10 lg:grid-cols-[1.4fr_1fr]"
     >
       <div className="space-y-5">
         <div className="rounded-[28px] border border-[var(--border)] bg-white p-7 shadow-softer">
@@ -432,10 +627,12 @@ export default function ReviewBlock({
             </>
           )}
         </div>
+
+        <FilterPanel />
       </div>
 
       <div className="min-w-0 space-y-5">
-        <div className="w-full rounded-[28px] border border-[var(--border)] bg-white p-5 shadow-softer">
+        <div className="hidden">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>

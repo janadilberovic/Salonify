@@ -2,21 +2,21 @@
 
 import { useState } from "react";
 import { addSalonService } from "../../services/salonService";
-import { Console } from "console";
+import { showToast } from "./Toast";
 
 const serviceTypes = [
-  "Haircut",
-  "Coloring",
-  "Styling",
-  "Manicure",
-  "Pedicure",
-  "Makeup",
-  "Massage",
-  "Facial",
-  "Waxing",
-  "SpaTreatment",
-  "NailArt",
-  "Other",
+  { value: "0", label: "Šišanje", description: "Kratko, dugo, feniranje i oblikovanje" },
+  { value: "1", label: "Farbanje", description: "Boja, pramenovi i toniranje" },
+  { value: "2", label: "Stilizovanje", description: "Frizure i završni styling" },
+  { value: "3", label: "Manikir", description: "Nega i uređivanje noktiju" },
+  { value: "4", label: "Pedikir", description: "Nega stopala i noktiju" },
+  { value: "5", label: "Šminkanje", description: "Dnevna, večernja i svečana šminka" },
+  { value: "6", label: "Masaža", description: "Relaks i terapeutski tretmani" },
+  { value: "7", label: "Tretman lica", description: "Nega, čišćenje i hidratacija" },
+  { value: "8", label: "Depilacija", description: "Uklanjanje dlačica" },
+  { value: "9", label: "Spa tretman", description: "Rituali opuštanja i nege" },
+  { value: "10", label: "Nail art", description: "Dekoracija i dizajn noktiju" },
+  { value: "11", label: "Ostalo", description: "Druga usluga salona" },
 ];
 
 type Props = {
@@ -37,6 +37,9 @@ export default function AddServiceModal({
   const [serviceType, setServiceType] = useState("0");
   const [image, setImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [serviceMenuOpen, setServiceMenuOpen] = useState(false);
+  const selectedServiceType =
+    serviceTypes.find((type) => type.value === serviceType) ?? serviceTypes[0];
 
   const resetForm = () => {
     setName("");
@@ -45,6 +48,7 @@ export default function AddServiceModal({
     setDurationMinutes("");
     setServiceType("0");
     setImage(null);
+    setServiceMenuOpen(false);
   };
 
   const handleClose = () => {
@@ -75,17 +79,18 @@ export default function AddServiceModal({
       resetForm();
       onSuccess();
       onClose();
+      showToast("Usluga je uspešno dodata.");
     } catch (error) {
       console.error(error);
-      alert("Greška pri dodavanju usluge.");
+      showToast("Greška pri dodavanju usluge.", "error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm grid place-items-center px-4">
-      <div className="w-full max-w-xl rounded-3xl bg-white p-7 shadow-2xl">
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/40 px-4 py-6 backdrop-blur-sm">
+      <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-7 shadow-2xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display text-2xl font-semibold">
             Nova usluga
@@ -142,32 +147,134 @@ export default function AddServiceModal({
             />
           </div>
 
-          <label className="block">
+          <div className="relative">
             <span className="text-sm font-medium text-[#4b3758]">
               Kategorija usluge
             </span>
 
-            <select
-              value={serviceType}
-              onChange={(e) => setServiceType(e.target.value)}
-              className="mt-2 w-full rounded-2xl border px-4 py-3 outline-none"
+            <button
+              type="button"
+              onClick={() => setServiceMenuOpen((prev) => !prev)}
+              className={`mt-2 flex w-full items-center justify-between gap-4 rounded-2xl border bg-white px-4 py-3 text-left outline-none transition ${
+                serviceMenuOpen
+                  ? "border-primary shadow-soft"
+                  : "border-[var(--border)] hover:border-primary"
+              }`}
             >
-              {serviceTypes.map((type, index) => (
-                <option key={index} value={index}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </label>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-foreground">
+                  {selectedServiceType.label}
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-muted">
+                  {selectedServiceType.description}
+                </span>
+              </span>
 
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) =>
-              setImage(e.target.files ? e.target.files[0] : null)
-            }
-            className="w-full rounded-2xl border px-4 py-3"
-          />
+              <span
+                className={`grid size-8 shrink-0 place-items-center rounded-full bg-primary-soft text-primary transition ${
+                  serviceMenuOpen ? "rotate-180" : ""
+                }`}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+
+            {serviceMenuOpen && (
+              <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-3xl border border-white/80 bg-white shadow-lift">
+                <div className="border-b border-[var(--border)] bg-gradient-to-br from-white via-[#fdf7fb] to-primary-soft/50 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                    Tip usluge
+                  </p>
+                </div>
+
+                <div className="max-h-56 overflow-y-auto p-2">
+                  {serviceTypes.map((type) => {
+                    const active = type.value === serviceType;
+
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => {
+                          setServiceType(type.value);
+                          setServiceMenuOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition ${
+                          active
+                            ? "bg-primary text-white shadow-soft"
+                            : "text-foreground hover:bg-[var(--background-soft)]"
+                        }`}
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold">
+                            {type.label}
+                          </span>
+                          <span
+                            className={`mt-0.5 block truncate text-xs ${
+                              active ? "text-white/80" : "text-muted"
+                            }`}
+                          >
+                            {type.description}
+                          </span>
+                        </span>
+
+                        {active && (
+                          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-white/20 text-xs font-bold">
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <label className="block cursor-pointer rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--background-soft)] px-4 py-4 transition hover:border-primary hover:bg-primary-soft/50">
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) =>
+                setImage(e.target.files ? e.target.files[0] : null)
+              }
+            />
+
+            <span className="flex items-center justify-between gap-4">
+              <span>
+                <span className="block text-sm font-semibold text-[#4b3758]">
+                  Dodaj sliku usluge
+                </span>
+                <span className="mt-1 block text-xs text-muted">
+                  Klikni ovde da izabereš fotografiju za ovu uslugu.
+                </span>
+                {image && (
+                  <span className="mt-2 block truncate text-xs font-semibold text-primary">
+                    Izabrano: {image.name}
+                  </span>
+                )}
+              </span>
+
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-primary shadow-softer">
+                +
+              </span>
+            </span>
+          </label>
         </div>
 
         <div className="flex justify-end gap-3 mt-6">

@@ -1,5 +1,5 @@
 import { Salon, Service } from "@/app/lib/data";
-import { SalonApi, ServiceApi } from "@/types/Salon";
+import { SalonApi } from "@/types/Salon";
 import { mapServiceTypeToSr } from "./appointment";
 import { SalonService } from "@/types/SalonService";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -20,17 +20,17 @@ export function mapSalonApiToUI(salon: SalonApi): Salon {
     cover: getImageUrl(salon.imageUrl),
     rating: 0,
     reviewCount: 0,
-    categories: salon.services.map((s) => s.name),
+    categories: services.map((s) => s.name),
     priceLevel: 2,
-    openingHours: salon.workingDays.map((day) => ({
-      day: String(day.day),
+    openingHours: workingDays.map((day) => ({
+      day: String(normalizeDay(day.day)),
       hours:
         day.startTime && day.endTime
-          ? `${day.startTime} - ${day.endTime}`
+          ? `${day.startTime.slice(0, 5)} - ${day.endTime.slice(0, 5)}`
           : "Zatvoreno",
       closed: day.isClosed ?? false,
     })),
-    services: salon.services.map((s) => ({
+    services: services.map((s) => ({
       id: String(s.serviceType),
       name: s.name,
       description: s.description || "",
@@ -64,6 +64,32 @@ export function MapService(s: Service): SalonService {
   };
 }
 
+function normalizeDay(day: number | string) {
+  if (typeof day === "number") return day;
+
+  const parsed = Number(day);
+  if (!Number.isNaN(parsed)) return parsed;
+
+  const dayMap: Record<string, number> = {
+    sunday: 0,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+    nedelja: 0,
+    ponedeljak: 1,
+    utorak: 2,
+    sreda: 3,
+    cetvrtak: 4,
+    petak: 5,
+    subota: 6,
+  };
+
+  return dayMap[String(day).trim().toLowerCase()] ?? 0;
+}
+
 function getServiceTypeNumber(serviceType?: string | number) {
   if (typeof serviceType === "number") {
     return serviceType;
@@ -71,7 +97,24 @@ function getServiceTypeNumber(serviceType?: string | number) {
 
   if (typeof serviceType === "string") {
     const parsed = Number(serviceType);
-    return Number.isNaN(parsed) ? 11 : parsed;
+    if (!Number.isNaN(parsed)) return parsed;
+
+    const serviceTypeMap: Record<string, number> = {
+      haircut: 0,
+      coloring: 1,
+      styling: 2,
+      manicure: 3,
+      pedicure: 4,
+      makeup: 5,
+      massage: 6,
+      facial: 7,
+      waxing: 8,
+      spatreatment: 9,
+      nailart: 10,
+      other: 11,
+    };
+
+    return serviceTypeMap[serviceType.trim().toLowerCase()] ?? 11;
   }
 
   return 11;

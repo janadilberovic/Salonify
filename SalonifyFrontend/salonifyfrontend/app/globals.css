@@ -149,6 +149,36 @@ body {
   animation: shimmer 2.2s infinite linear;
 }
 
+@keyframes salonPageNext {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes salonPagePrev {
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.salon-page-enter-next {
+  animation: salonPageNext 320ms ease-out both;
+}
+
+.salon-page-enter-prev {
+  animation: salonPagePrev 320ms ease-out both;
+}
+
 input, textarea, select {
   font: inherit;
 }

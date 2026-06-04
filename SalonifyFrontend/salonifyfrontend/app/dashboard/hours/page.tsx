@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Input, EyebrowLabel } from "../../components/ui";
+import { Button, EyebrowLabel } from "../../components/ui";
 import {
   getMySalonWorkingDays,
   updateSalonWorkingDays,
 } from "@/services/salon";
 import { WorkingDayApi } from "@/types/Salon";
+import PrettyTimePicker from "../../components/PrettyTimePicker";
+import { showToast } from "../../components/Toast";
 
 
 const dayNames = [
@@ -70,10 +72,10 @@ export default function HoursPage() {
 
       await updateSalonWorkingDays(normalizedHours );
 
-      alert("Radno vreme je uspešno sačuvano.");
+      showToast("Radno vreme je uspešno sačuvano.");
     } catch (error) {
       console.error("Greška pri čuvanju radnog vremena:", error);
-      alert("Došlo je do greške pri čuvanju.");
+      showToast("Došlo je do greške pri čuvanju.", "error");
     } finally {
       setSaving(false);
     }
@@ -127,6 +129,32 @@ export default function HoursPage() {
     return value.slice(0, 5);
   }
 
+  function getDayIndex(day: number | string) {
+    if (typeof day === "number") return day;
+
+    const parsed = Number(day);
+    if (!Number.isNaN(parsed)) return parsed;
+
+    const dayMap: Record<string, number> = {
+      sunday: 0,
+      monday: 1,
+      tuesday: 2,
+      wednesday: 3,
+      thursday: 4,
+      friday: 5,
+      saturday: 6,
+      nedelja: 0,
+      ponedeljak: 1,
+      utorak: 2,
+      sreda: 3,
+      cetvrtak: 4,
+      petak: 5,
+      subota: 6,
+    };
+
+    return dayMap[String(day).trim().toLowerCase()] ?? 0;
+  }
+
   if (loading) {
     return <p>Učitavanje radnog vremena...</p>;
   }
@@ -148,33 +176,31 @@ export default function HoursPage() {
           {hours.map((h, i) => (
             <div
               key={h.day}
-              className="grid grid-cols-[100px_1fr_auto] gap-4 items-center p-4 rounded-2xl border border-[var(--border)]"
+              className="grid grid-cols-1 gap-4 rounded-2xl border border-[var(--border)] p-4 sm:grid-cols-[120px_1fr_auto] sm:items-center sm:gap-5"
             >
-              <p className="font-semibold">{dayNames[h.day]}</p>
+              <p className="font-semibold">{dayNames[getDayIndex(h.day)]}</p>
 
-              <div className="flex items-center gap-2">
-                <Input
-                  type="time"
-                  value={displayTime(h.startTime)}
-                  disabled={h.isClosed}
-                  onChange={(e) =>
-                    updateField(i, "startTime", e.target.value)
-                  }
-                  className="!h-10 text-sm"
-                />
+              {h.isClosed ? (
+                <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--background-soft)] px-4 py-3 text-sm font-medium text-muted">
+                  Neradni dan
+                </div>
+              ) : (
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                  <PrettyTimePicker
+                    value={displayTime(h.startTime)}
+                    onChange={(value) => updateField(i, "startTime", value)}
+                  />
 
-                <span className="text-muted text-sm">do</span>
+                  <span className="rounded-full bg-[var(--background-soft)] px-3 py-1 text-xs font-semibold text-muted">
+                    do
+                  </span>
 
-                <Input
-                  type="time"
-                  value={displayTime(h.endTime)}
-                  disabled={h.isClosed}
-                  onChange={(e) =>
-                    updateField(i, "endTime", e.target.value)
-                  }
-                  className="!h-10 text-sm"
-                />
-              </div>
+                  <PrettyTimePicker
+                    value={displayTime(h.endTime)}
+                    onChange={(value) => updateField(i, "endTime", value)}
+                  />
+                </div>
+              )}
 
               <label className="inline-flex items-center gap-2 text-xs font-medium text-muted cursor-pointer">
                 <input

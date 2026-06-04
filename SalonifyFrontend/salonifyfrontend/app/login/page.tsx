@@ -7,6 +7,8 @@ import AuthShell from "../components/AuthShell";
 import { Button, Input, Label } from "../components/ui";
 import { ArrowRightIcon } from "../components/Icons";
 import { apiFetch } from "@/lib/api";
+import { getMySalon } from "@/services/salon";
+import { Salon } from "../lib/data";
 
 type LoginResponse = {
   token: string;
@@ -32,14 +34,15 @@ export default function LoginPage() {
 
     if (token && role) {
       if (role === "Salon") {
-        router.push("/dashboard");
+        redirectSalonAfterLogin(router.push);
       } else if (role === "Admin") {
         router.push("/admin");
       } else {
         router.push("/");
       }
     } else {
-      setIsReady(true);
+      const readyTimer = window.setTimeout(() => setIsReady(true), 0);
+      return () => window.clearTimeout(readyTimer);
     }
   }, [router]);
 
@@ -72,7 +75,7 @@ export default function LoginPage() {
       document.cookie = `role=${response.role}; path=/; max-age=${60 * 60 * 24 * 30}`;
 
       if (response.role === "Salon") {
-        router.push("/dashboard");
+        await redirectSalonAfterLogin(router.push);
       } else if (response.role === "Admin") {
         router.push("/admin");
       } else {
@@ -151,5 +154,26 @@ export default function LoginPage() {
         </Button>
       </form>
     </AuthShell>
+  );
+}
+
+async function redirectSalonAfterLogin(push: (href: string) => void) {
+  try {
+    const salon = await getMySalon();
+    push(isSalonProfileComplete(salon) ? "/dashboard" : "/dashboard/profile?welcome=1");
+  } catch {
+    push("/dashboard/profile?welcome=1");
+  }
+}
+
+function isSalonProfileComplete(salon: Salon) {
+  return Boolean(
+    salon.name?.trim() &&
+      salon.description?.trim() &&
+      salon.address?.trim() &&
+      salon.city?.trim() &&
+      salon.phone?.trim() &&
+      salon.openingHours.some((day) => !day.closed) &&
+      salon.services.length > 0
   );
 }

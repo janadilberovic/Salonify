@@ -88,7 +88,7 @@ public class AppointmentController : ControllerBase
         if (service == null)
             return BadRequest(new { message = "Usluga ne postoji u ovom salonu." });
 
-        TimeSpan duration = TimeSpan.FromMinutes((double)appointmentDTO.DurationMinutes);
+        TimeSpan duration = TimeSpan.FromMinutes(service.DurationMinutes);
         TimeSpan endTime = startTime.Add(duration);
 
 

@@ -57,20 +57,16 @@ public class AppointmentRepository
         var dayEnd = dayStart.AddDays(1);
 
         var appointments = await _appointments.Find(a =>
+            a.SalonId == salonId &&
             a.AppointmentDate >= dayStart &&
             a.AppointmentDate < dayEnd &&
-            a.Status != AppointmentStatus.Approved &&
-            a.Status != AppointmentStatus.Rejected
+            (a.Status == AppointmentStatus.Pending || a.Status == AppointmentStatus.Approved)
         ).ToListAsync();
 
-        var salonAppointments = appointments
-            .Where(a => a.SalonId == salonId)
-            .ToList();
-
         Console.WriteLine($"PROVERA ZA SLOT: {startTime} - {endTime}");
-        Console.WriteLine($"TERMINA ZA SALON: {salonAppointments.Count}");
+        Console.WriteLine($"TERMINA ZA SALON: {appointments.Count}");
 
-        foreach (var a in salonAppointments)
+        foreach (var a in appointments)
         {
             var cond1 = startTime < a.EndTime;
             var cond2 = endTime > a.StartTime;
@@ -82,7 +78,7 @@ public class AppointmentRepository
             Console.WriteLine($"KONFLIKT = {conflict}");
         }
 
-        return salonAppointments.Any(a =>
+        return appointments.Any(a =>
             startTime < a.EndTime &&
             endTime > a.StartTime
         );

@@ -11,16 +11,24 @@ export async function apiFetch<T>(
 
   const isFormData = options.body instanceof FormData;
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+  let response: Response;
 
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
 
-      ...(options.headers || {}),
-    },
-  });
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error(
+      "API nije dostupan. Proveri da li backend radi i da li je dozvoljen frontend port."
+    );
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

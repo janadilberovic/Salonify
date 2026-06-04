@@ -4,9 +4,11 @@ public class ReviewResponseDTO
     public int Rating { get; set; }
     public string Comment { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string AppointmentId { get; set; }
 
     public string UserName { get; set; }
     public string ServiceName { get; set; }
+    public ServiceType ServiceType { get; set; }
 
     public string? ImageUrl { get; set; }
 }

@@ -25,7 +25,7 @@ public class RecommendationService
         var user = await _userRepository.GetByIdAsync(userId);
         var activities = await _userActivityRepository.GetByUserIdAsync(userId);
 
-        if (user == null || user.PreferenceVector.Count == 0 || activities.Count == 0)
+        if (user == null || user.PreferenceVector.Count == 0)
             return new List<SalonRecommendationDto>();
 
         var salons = await _salonRepository.GetAllAsync();
@@ -51,13 +51,6 @@ public class RecommendationService
         Dictionary<string, double> preferenceVector,
         List<UserActivity> activities)
     {
-        var directActivities = activities
-            .Where(x => x.SalonId == salon.Id)
-            .ToList();
-
-        if (directActivities.Count == 0)
-            return null;
-
         var featureVector = salon.FeatureVector.Count > 0
             ? salon.FeatureVector
             : BuildSalonFeatureVector(salon.Services);
@@ -65,28 +58,33 @@ public class RecommendationService
         if (featureVector.Count == 0)
             return null;
 
-        var reasonActivity = GetStrongestDirectActivity(
-            directActivities,
+        var similarityScore = CalculateCosineSimilarity(preferenceVector, featureVector);
+
+        if (similarityScore <= 0)
+            return null;
+
+        var reasonServiceType = GetStrongestMatchingServiceType(
             preferenceVector,
             featureVector
         );
 
-        if (reasonActivity == null)
-            return null;
-
-        var reasonServiceType = reasonActivity.ServiceType;
-
         if (reasonServiceType == ServiceType.Other)
             return null;
+
+        var reasonActivity = activities
+            .Where(x => x.ServiceType == reasonServiceType)
+            .OrderByDescending(x => x.Weight)
+            .ThenByDescending(x => x.CreatedAt)
+            .FirstOrDefault();
 
         return new SalonRecommendationDto
         {
             SalonId = salon.Id,
             SalonName = salon.Name,
             Salon = salon,
-            SimilarityScore = CalculateCosineSimilarity(preferenceVector, featureVector),
+            SimilarityScore = similarityScore,
             ReasonServiceType = reasonServiceType,
-            ReasonActivityType = reasonActivity.ActivityType
+            ReasonActivityType = reasonActivity?.ActivityType
         };
     }
 
@@ -98,24 +96,24 @@ public class RecommendationService
             .ToDictionary(x => x.Key, x => (double)x.Count());
     }
 
-    private static UserActivity? GetStrongestDirectActivity(
-        List<UserActivity> directActivities,
+    private static ServiceType GetStrongestMatchingServiceType(
         Dictionary<string, double> preferenceVector,
         Dictionary<string, double> featureVector)
     {
-        return directActivities
-            .Where(x => x.ServiceType != ServiceType.Other)
+        var serviceType = featureVector
             .Where(x =>
             {
-                var key = x.ServiceType.ToString();
-                return preferenceVector.TryGetValue(key, out var preference)
+                return preferenceVector.TryGetValue(x.Key, out var preference)
                     && preference > 0
-                    && featureVector.TryGetValue(key, out var feature)
-                    && feature > 0;
+                    && x.Value > 0;
             })
-            .OrderByDescending(x => x.Weight)
-            .ThenByDescending(x => x.CreatedAt)
+            .OrderByDescending(x => preferenceVector[x.Key] * x.Value)
+            .Select(x => x.Key)
             .FirstOrDefault();
+
+        return Enum.TryParse<ServiceType>(serviceType, out var parsed)
+            ? parsed
+            : ServiceType.Other;
     }
 
     private static double CalculateCosineSimilarity(

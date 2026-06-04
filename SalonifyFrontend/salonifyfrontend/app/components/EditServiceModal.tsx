@@ -5,6 +5,7 @@ import {
   updateSalonService,
   removeSalonService,
 } from "@/services/salonService";
+import { showToast } from "./Toast";
 
 export default function EditServiceModal({
   open,
@@ -49,9 +50,10 @@ export default function EditServiceModal({
 
       await onSuccess();
       onClose();
+      showToast("Usluga je uspešno izmenjena.");
     } catch (error) {
       console.error(error);
-      alert("Greška pri izmeni usluge.");
+      showToast("Greška pri izmeni usluge.", "error");
     } finally {
       setLoading(false);
     }
@@ -67,9 +69,10 @@ export default function EditServiceModal({
 
       await onSuccess();
       onClose();
+      showToast("Usluga je obrisana.");
     } catch (error) {
       console.error(error);
-      alert("Greška pri brisanju usluge.");
+      showToast("Greška pri brisanju usluge.", "error");
     } finally {
       setLoading(false);
     }

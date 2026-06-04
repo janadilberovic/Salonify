@@ -75,3 +75,12 @@ C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\verify-build\Swashbuckle.AspNe
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\verify-build\Swashbuckle.AspNetCore.SwaggerUI.dll
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\verify-build\System.IdentityModel.Tokens.Jwt.dll
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\verify-build\ZstdSharp.dll
+C:\Users\Jana\Desktop\faks\diplomski\api-build-check\appsettings.Development.json
+C:\Users\Jana\Desktop\faks\diplomski\api-build-check\appsettings.json
+C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.staticwebassets.runtime.json
+C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.staticwebassets.endpoints.json
+C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.exe
+C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.deps.json
+C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.runtimeconfig.json
+C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.dll
+C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.pdb

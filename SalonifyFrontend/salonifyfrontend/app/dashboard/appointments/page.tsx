@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { StatusBadge, Button, Avatar, EyebrowLabel } from "../../components/ui";
+import { showToast } from "../../components/Toast";
 
 import {
   getAppointmentsForSalon,
@@ -66,9 +67,10 @@ export default function AppointmentsPage() {
             : a,
         ),
       );
+      showToast("Termin je odobren.");
     } catch (error) {
       console.error("Greška pri odobravanju termina:", error);
-      alert("Greška pri odobravanju termina.");
+      showToast("Greška pri odobravanju termina.", "error");
     }
   }
 
@@ -83,9 +85,10 @@ export default function AppointmentsPage() {
             : a,
         ),
       );
+      showToast("Termin je odbijen.");
     } catch (error) {
       console.error("Greška pri odbijanju termina:", error);
-      alert("Greška pri odbijanju termina.");
+      showToast("Greška pri odbijanju termina.", "error");
     }
   }
 
@@ -100,9 +103,10 @@ export default function AppointmentsPage() {
             : a,
         ),
       );
+      showToast("Termin je označen kao završen.");
     } catch (error) {
       console.error("Greška pri završavanju termina:", error);
-      alert("Greška pri završavanju termina.");
+      showToast("Greška pri završavanju termina.", "error");
     }
   }
 
