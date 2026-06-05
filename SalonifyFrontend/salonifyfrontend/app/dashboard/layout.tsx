@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { SalonCover } from "../components/ui";
 
 import {
   CalendarIcon,
@@ -48,13 +48,11 @@ export default function DashboardLayout({
               {/* Header salona */}
               <div className="flex items-center gap-3 p-2">
                 <div className="relative size-12 rounded-2xl overflow-hidden shrink-0 bg-primary-soft">
-                  <Image
-                    src={salon?.cover || "/images/salon-placeholder.jpg"}
-                    alt={salon?.name || "Salon"}
-                    fill
+                  <SalonCover
+                    name={salon?.name || "Salon"}
+                    src={salon?.cover}
                     sizes="100vw"
-                    className="object-cover"
-                    unoptimized
+                    initialsClassName="text-lg"
                   />
                 </div>
 

@@ -5,7 +5,7 @@ import { Rating, Avatar, Button, Textarea, Label } from "../../components/ui";
 import { StarIcon, StarOutlineIcon } from "../../components/Icons";
 import type { Review } from "@/types/Review";
 import type { SalonService } from "@/types/SalonService";
-import { createReview, searchSalonReviews } from "@/services/reviews";
+import { createReview, getReviewsForSalon } from "@/services/reviews";
 
 type SortValue = "newest" | "oldest" | "highest" | "lowest";
 
@@ -69,7 +69,7 @@ export default function ReviewBlock({
   reviewAppointmentId?: string;
   reviewServiceName?: string;
 }) {
-  const [displayedReviews, setDisplayedReviews] = useState<Review[]>(reviews);
+  const [allReviews, setAllReviews] = useState<Review[]>(reviews);
 
   const [writeRating, setWriteRating] = useState(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
@@ -137,10 +137,15 @@ export default function ReviewBlock({
     setServiceMenuOpen(false);
   }
 
-  function applyServiceFilter(data: Review[]) {
-    if (serviceFilter === "all") return data;
+  const displayedReviews = useMemo(() => {
+    let filtered = [...allReviews];
 
-    return data.filter((review) => {
+    if (minRatingFilter !== "all") {
+      filtered = filtered.filter((review) => review.rating >= minRatingFilter);
+    }
+
+    if (serviceFilter !== "all") {
+      filtered = filtered.filter((review) => {
       const reviewServiceType = getServiceTypeNumber(review.serviceType);
 
       if (reviewServiceType === serviceFilter) {
@@ -153,10 +158,68 @@ export default function ReviewBlock({
         reviewServiceName && selectedServiceNames.includes(reviewServiceName)
       );
     });
+    }
+
+    return filtered.sort((a, b) => {
+      if (sortFilter === "highest") return b.rating - a.rating;
+      if (sortFilter === "lowest") return a.rating - b.rating;
+
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+
+      if (sortFilter === "oldest") return dateA - dateB;
+
+      return dateB - dateA;
+    });
+  }, [
+    allReviews,
+    minRatingFilter,
+    selectedServiceNames,
+    serviceFilter,
+    sortFilter,
+  ]);
+
+  const reviewStats = useMemo(() => {
+    const total = allReviews.length;
+    const average = total
+      ? allReviews.reduce((sum, review) => sum + review.rating, 0) / total
+      : rating;
+
+    const breakdown = [5, 4, 3, 2, 1].map((star) => {
+      const n = allReviews.filter((r) => Math.round(r.rating) === star).length;
+      const pct = total ? (n / total) * 100 : 0;
+
+      return { star, n, pct };
+    });
+
+    return {
+      average,
+      count: total || count,
+      breakdown,
+    };
+  }, [allReviews, count, rating]);
+
+  async function searchSalonReviews(
+    targetSalonId?: string,
+    _params?: {
+      minRating?: number;
+      serviceType?: number;
+      sortBy?: SortValue;
+    }
+  ) {
+    if (!targetSalonId) return reviews;
+
+    return getReviewsForSalon(targetSalonId);
   }
 
+  function applyServiceFilter(data: Review[]) {
+    return data;
+  }
+
+  const setDisplayedReviews = setAllReviews;
+
   useEffect(() => {
-    setDisplayedReviews(reviews);
+    setAllReviews(reviews);
   }, [reviews]);
 
   useEffect(() => {
@@ -179,7 +242,6 @@ export default function ReviewBlock({
         sortFilter === "newest";
 
       if (noFiltersSelected) {
-        setDisplayedReviews(reviews);
         return;
       }
 
@@ -214,31 +276,20 @@ export default function ReviewBlock({
   const alreadyReviewed = useMemo(() => {
     if (!reviewAppointmentId) return false;
 
-    return reviews.some(
+    return allReviews.some(
       (review) => review.appointmentId === reviewAppointmentId
     );
-  }, [reviews, reviewAppointmentId]);
+  }, [allReviews, reviewAppointmentId]);
 
   const canWriteReview = Boolean(reviewAppointmentId) && !alreadyReviewed;
-
-  const breakdown = [5, 4, 3, 2, 1].map((star) => {
-    const n = reviews.filter((r) => Math.round(r.rating) === star).length;
-    const pct = reviews.length ? (n / reviews.length) * 100 : 0;
-
-    return { star, n, pct };
-  });
 
   async function reloadReviews() {
     if (!salonId) return;
 
     try {
-      const data = await searchSalonReviews(salonId, {
-        minRating: minRatingFilter === "all" ? undefined : minRatingFilter,
-        serviceType: serviceFilter === "all" ? undefined : serviceFilter,
-        sortBy: sortFilter,
-      });
+      const data = await getReviewsForSalon(salonId);
 
-      setDisplayedReviews(applyServiceFilter(data));
+      setAllReviews(data);
     } catch (error) {
       console.error("Greška pri ponovnom učitavanju recenzija:", error);
       setDisplayedReviews(reviews);
@@ -476,26 +527,26 @@ export default function ReviewBlock({
   return (
     <section
       id="reviews"
-      className="grid w-full scroll-mt-28 gap-10 lg:grid-cols-[1.4fr_1fr]"
+      className="grid w-full scroll-mt-28 gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]"
     >
       <div className="space-y-5">
         <div className="rounded-[28px] border border-[var(--border)] bg-white p-7 shadow-softer">
           <div className="flex items-center gap-5">
             <p className="font-display text-6xl font-semibold leading-none text-primary">
-              {rating.toFixed(2)}
+              {reviewStats.average.toFixed(2)}
             </p>
 
             <div>
-              <Rating value={rating} size={17} />
+              <Rating value={reviewStats.average} size={17} />
 
               <p className="mt-2 text-sm text-muted">
-                Broj trenutnih recenzija: {count} 
+                Broj trenutnih recenzija: {reviewStats.count} 
               </p>
             </div>
           </div>
 
           <div className="mt-7 space-y-3">
-            {breakdown.map((b) => (
+            {reviewStats.breakdown.map((b) => (
               <div
                 key={b.star}
                 className="grid grid-cols-[42px_1fr_24px] items-center gap-4 text-sm"
@@ -631,7 +682,7 @@ export default function ReviewBlock({
         <FilterPanel />
       </div>
 
-      <div className="min-w-0 space-y-5">
+      <div className="min-w-0 w-full space-y-5">
         <div className="hidden">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -818,7 +869,7 @@ export default function ReviewBlock({
           </div>
         </div>
 
-        {!filterLoading && displayedReviews.length === 0 && (
+        {displayedReviews.length === 0 && (
           <div className="w-full rounded-[28px] border border-[var(--border)] bg-white p-8 text-center shadow-softer">
             <p className="text-sm text-muted">
               Nema recenzija za izabrane filtere.
@@ -827,8 +878,7 @@ export default function ReviewBlock({
         )}
 
         <div className="w-full space-y-4">
-          {!filterLoading &&
-            displayedReviews.map((review) => (
+          {displayedReviews.map((review) => (
               <article
                 key={review.id}
                 className="w-full rounded-[26px] border border-[var(--border)] bg-white px-5 py-5 shadow-softer transition hover:-translate-y-0.5 hover:shadow-soft"

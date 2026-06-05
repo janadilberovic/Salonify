@@ -280,18 +280,27 @@ export default function SalonsPage() {
     }
   }, [currentPage, pageCount]);
 
-  function goToPage(page: number) {
+  function goToPage(page: number, shouldScroll = true) {
     if (page < 0 || page >= pageCount || page === currentPage) return;
 
     setPageDirection(page > currentPage ? "next" : "prev");
     setCurrentPage(page);
-    scrollToResults();
+
+    if (shouldScroll) {
+      requestAnimationFrame(scrollToResults);
+    }
   }
 
   function scrollToResults() {
-    const top = resultsRef.current
-      ? resultsRef.current.getBoundingClientRect().top + window.scrollY - 96
-      : 0;
+    const rect = resultsRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const isComfortablyVisible =
+      rect.top >= 84 && rect.top <= window.innerHeight * 0.32;
+
+    if (isComfortablyVisible) return;
+
+    const top = rect.top + window.scrollY - 96;
 
     window.scrollTo({
       top: Math.max(top, 0),
@@ -642,21 +651,23 @@ export default function SalonsPage() {
           <EmptyState />
         ) : (
           <>
-            <div
-              key={currentPage}
-              className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${
-                pageDirection === "next"
-                  ? "salon-page-enter-next"
-                  : "salon-page-enter-prev"
-              }`}
-            >
-              {visibleSalons.map((s, i) => (
-                <SalonCard
-                  key={s.id}
-                  salon={s}
-                  featured={currentPage === 0 && i === 0}
-                />
-              ))}
+            <div className="overflow-hidden pb-1">
+              <div
+                key={currentPage}
+                className={`grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${
+                  pageDirection === "next"
+                    ? "salon-page-enter-next"
+                    : "salon-page-enter-prev"
+                }`}
+              >
+                {visibleSalons.map((s, i) => (
+                  <SalonCard
+                    key={s.id}
+                    salon={s}
+                    featured={currentPage === 0 && i === 0}
+                  />
+                ))}
+              </div>
             </div>
 
             {pageCount > 1 && (
@@ -695,6 +706,7 @@ export default function SalonsPage() {
                         type="button"
                         onClick={() => goToPage(index)}
                         aria-label={`Strana ${index + 1}`}
+                        aria-current={currentPage === index ? "page" : undefined}
                         className={`h-2.5 rounded-full transition-all ${
                           currentPage === index
                             ? "w-8 bg-primary"

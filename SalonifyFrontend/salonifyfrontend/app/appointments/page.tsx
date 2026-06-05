@@ -287,6 +287,7 @@ function AppointmentRow({
 }) {
   const cancellable = a.status === "Pending" || a.status === "Approved";
   const duration = getDuration(a.startTime, a.endTime);
+  const displayServiceName = a.serviceName || serviceLabel(a.serviceType);
 
   return (
     <div className="bg-white rounded-3xl border border-[var(--border)] shadow-softer overflow-hidden hover-lift">
@@ -294,7 +295,7 @@ function AppointmentRow({
         <div className="relative aspect-[5/3] md:aspect-auto md:min-h-full">
           <Image
             src={getImageUrl(a.serviceImageUrl)}
-            alt={String(a.serviceType || serviceLabel(a.serviceType))}
+            alt={displayServiceName}
             fill
             sizes="(max-width: 768px) 100vw, 200px"
             className="object-cover"
@@ -310,7 +311,7 @@ function AppointmentRow({
               </p>
 
               <h3 className="font-display mt-1 text-xl font-semibold">
-                {serviceLabel(a.serviceType)}
+                {displayServiceName}
               </h3>
             </div>
 
@@ -366,7 +367,7 @@ function AppointmentRow({
           ) : a.status === "Completed" && !a.canReview ? (
             <LinkButton
               href={`/salons/${a.slug}?reviewAppointmentId=${a.id}&service=${encodeURIComponent(
-                serviceLabel(a.serviceName ?? a.serviceType),
+                displayServiceName,
               )}#reviews`}
               variant="soft"
               size="sm"

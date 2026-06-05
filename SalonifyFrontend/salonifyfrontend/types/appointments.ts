@@ -19,6 +19,7 @@ export type AppointmentApi = {
   price:number;
   salonId: string;
   serviceType: string;
+  serviceName: string;
   appointmentDate: string;
   startTime: string;
   endTime: string;

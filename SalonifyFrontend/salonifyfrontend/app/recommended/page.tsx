@@ -4,18 +4,19 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SalonCard from "../components/SalonCard";
 import { EyebrowLabel, LinkButton } from "../components/ui";
-import { useEffect, useState } from "react";
+import { ChevronRightIcon } from "../components/Icons";
+import { useEffect, useRef, useState } from "react";
 import {
   getRecommendedSalons,
   RecommendedSalon,
 } from "@/services/recommendations";
-import { mapServiceTypeToSr } from "@/mappers/appointment";
 
 export default function RecommendedPage() {
   const [recommendations, setRecommendations] = useState<RecommendedSalon[]>(
     []
   );
   const [loading, setLoading] = useState(true);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function loadSalons() {
@@ -33,6 +34,16 @@ export default function RecommendedPage() {
 
     loadSalons();
   }, []);
+
+  function scrollRecommendations(direction: "prev" | "next") {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    carousel.scrollBy({
+      left: direction === "next" ? carousel.clientWidth : -carousel.clientWidth,
+      behavior: "smooth",
+    });
+  }
 
   return (
     <>
@@ -82,20 +93,58 @@ export default function RecommendedPage() {
             </LinkButton>
           </div>
         ) : (
-          <div className="grid items-stretch sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recommendations.map((recommendation) => (
-              <div
-                key={recommendation.salonId}
-                className="flex h-full flex-col gap-3"
-              >
-                <div className="flex-1">
-                  <SalonCard salon={recommendation.salon} featured={false} />
-                </div>
-                <p className="min-h-10 px-1 text-sm leading-5 text-muted">
-                  {getRecommendationReason(recommendation)}
+          <div className="space-y-5">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <h2 className="font-display text-2xl font-semibold">
+                  Personalizovane preporuke
+                </h2>
+                <p className="mt-1 text-sm text-muted">
+                  Saloni odabrani prema Vasim aktivnostima i interesovanjima.
                 </p>
               </div>
-            ))}
+
+              {recommendations.length > 3 && (
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => scrollRecommendations("prev")}
+                    className="grid size-10 place-items-center rounded-full border border-[var(--border)] bg-white text-foreground shadow-softer transition hover:border-primary/40 hover:text-primary"
+                    aria-label="Prethodne preporuke"
+                  >
+                    <ChevronRightIcon width={18} height={18} className="rotate-180" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => scrollRecommendations("next")}
+                    className="grid size-10 place-items-center rounded-full bg-primary text-white shadow-soft transition hover:bg-primary-hover"
+                    aria-label="Sledece preporuke"
+                  >
+                    <ChevronRightIcon width={18} height={18} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div
+              ref={carouselRef}
+              className="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {recommendations.map((recommendation) => (
+                <div
+                  key={recommendation.salonId}
+                  className="flex min-w-0 shrink-0 basis-full snap-start flex-col gap-3 sm:basis-[calc((100%_-_1.5rem)/2)] lg:basis-[calc((100%_-_3rem)/3)]"
+                >
+                  <div className="flex-1">
+                    <SalonCard salon={recommendation.salon} featured={false} />
+                  </div>
+                  <p className="min-h-10 px-1 text-sm leading-5 text-muted">
+                    {getRecommendationReason(recommendation)}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>
@@ -106,9 +155,12 @@ export default function RecommendedPage() {
 }
 
 function getRecommendationReason(recommendation: RecommendedSalon) {
-  const service = mapServiceTypeToSr(
-    recommendation.reasonServiceType
-  ).toLowerCase();
+  const service =
+    recommendation.reasonServiceName?.trim().toLowerCase() ||
+    recommendation.salon.services.find(
+      (item) => String(item.serviceType) === String(recommendation.reasonServiceType)
+    )?.name.toLowerCase() ||
+    "ovu uslugu";
 
   switch (recommendation.reasonActivityType) {
     case "AppointmentCreated":

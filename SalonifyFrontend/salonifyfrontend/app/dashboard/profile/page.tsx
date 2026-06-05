@@ -11,6 +11,7 @@ import {
   Textarea,
   Label,
   EyebrowLabel,
+  SalonCover,
 } from "../../components/ui";
 
 import {
@@ -159,15 +160,13 @@ function ProfilePageContent() {
       {/* COVER IMAGE */}
       <div className="relative rounded-3xl overflow-hidden shadow-softer">
         <div className="relative aspect-[3/1]">
-          <Image
-            src={salon.cover || "/images/salon-placeholder.jpg"}
-            alt={salon.name || "Salon"}
-            fill
+          <SalonCover
+            name={salon.name || "Salon"}
+            src={salon.cover}
             sizes="100vw"
-            className="object-cover"
-            unoptimized
+            imageClassName="object-cover"
+            initialsClassName="text-6xl"
             priority
-            loading="eager"
           />
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />

@@ -10,7 +10,6 @@ import { AppointmentApi } from "@/types/appointments";
 import {
   AppointmentStatusMap,
   mapAppointmentStatusToSr,
-  mapServiceTypeToSr,
 } from "@/mappers/appointment";
 import { getMySalon } from "@/services/salon";
 import { getAverageReviewsForSalon } from "@/services/reviews";
@@ -203,7 +202,7 @@ export default function SalonDashboardPage() {
                     </h3>
 
                     <p className="text-xs text-muted-foreground">
-                      {mapServiceTypeToSr(appointment.serviceType)} •{" "}
+                      {appointment.serviceName || appointment.serviceType} •{" "}
                       {formatDate(appointment.appointmentDate)} •{" "}
                       {formatTime(appointment.startTime)} - {appointment.price}{" "}
                       RSD
@@ -275,7 +274,7 @@ export default function SalonDashboardPage() {
 
                     <div>
                       <h3 className="text-sm font-semibold text-foreground">
-                        {mapServiceTypeToSr(appointment.serviceType)}
+                        {appointment.serviceName || appointment.serviceType}
                       </h3>
 
                       <p className="text-xs text-muted-foreground">

@@ -94,14 +94,14 @@ export default function ServiceDetailsList({ salonId, services }: Props) {
 
       {selectedService && (
         <div
-          className="fixed inset-0 z-50 bg-black/35 px-4 py-8 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-sm"
           onClick={() => setSelectedService(null)}
         >
           <div
-            className="w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-lift"
+            className="flex w-full max-w-lg max-h-[88vh] flex-col overflow-hidden rounded-[28px] bg-white shadow-lift"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="relative aspect-[16/10]">
+            <div className="relative aspect-[16/8] shrink-0">
               <Image
                 src={selectedService.image}
                 alt={selectedService.name}
@@ -114,22 +114,22 @@ export default function ServiceDetailsList({ salonId, services }: Props) {
               <button
                 type="button"
                 onClick={() => setSelectedService(null)}
-                className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-white/90 text-foreground shadow-softer hover:text-primary"
+                className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/90 text-foreground shadow-softer transition hover:bg-white hover:text-primary"
                 aria-label="Zatvori detalje tretmana"
               >
-                <XIcon width={18} height={18} />
+                <XIcon width={16} height={16} />
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft/70 px-3 py-1 text-xs font-semibold text-[#5b3e8a]">
                 <SparkleIcon width={13} height={13} />
                 {selectedService.category}
               </span>
 
-              <div className="mt-4 flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-display text-3xl font-semibold leading-tight">
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <h3 className="font-display text-2xl font-semibold leading-tight sm:text-[1.7rem]">
                     {selectedService.name}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-muted">
@@ -138,13 +138,13 @@ export default function ServiceDetailsList({ salonId, services }: Props) {
                   </p>
                 </div>
 
-                <span className="shrink-0 font-display text-2xl font-semibold text-primary">
+                <span className="shrink-0 self-start rounded-2xl bg-primary-soft px-3 py-2 font-display text-xl font-semibold text-primary">
                   {selectedService.price} RSD
                 </span>
               </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-2xl bg-[var(--background-soft)] p-4">
+              <div className="mt-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--background-soft)] p-4">
                   <p className="text-xs uppercase tracking-[0.14em] text-muted">
                     Trajanje
                   </p>
@@ -153,7 +153,7 @@ export default function ServiceDetailsList({ salonId, services }: Props) {
                   </p>
                 </div>
 
-                <div className="rounded-2xl bg-[var(--background-soft)] p-4">
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--background-soft)] p-4">
                   <p className="text-xs uppercase tracking-[0.14em] text-muted">
                     Tip tretmana
                   </p>
@@ -163,9 +163,13 @@ export default function ServiceDetailsList({ salonId, services }: Props) {
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end">
-                <Button onClick={() => setSelectedService(null)}>
-                  Razumem
+              <div className="mt-6 flex justify-end border-t border-[var(--border)] pt-4">
+                <Button
+                  size="sm"
+                  className="min-w-24"
+                  onClick={() => setSelectedService(null)}
+                >
+                  OK
                 </Button>
               </div>
             </div>

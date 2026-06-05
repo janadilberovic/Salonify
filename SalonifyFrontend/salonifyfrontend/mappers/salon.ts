@@ -17,7 +17,7 @@ export function mapSalonApiToUI(salon: SalonApi): Salon {
     address: salon.address || "Adresa nije uneta",
     phone: salon.phone || "Telefon nije unet",
     gallery: salon.galleryImageUrls?.map(getImageUrl) || [],
-    cover: getImageUrl(salon.imageUrl),
+    cover: getOptionalImageUrl(salon.imageUrl) || "",
     rating: 0,
     reviewCount: 0,
     categories: services.map((s) => s.name),
@@ -47,6 +47,14 @@ export function mapSalonApiToUI(salon: SalonApi): Salon {
 
 function getImageUrl(url?: string | null) {
   if (!url) return "/images/salon-placeholder.jpg";
+
+  if (url.startsWith("http")) return url;
+
+  return `${API_BASE_URL}${url}`;
+}
+
+function getOptionalImageUrl(url?: string | null) {
+  if (!url) return null;
 
   if (url.startsWith("http")) return url;
 

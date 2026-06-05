@@ -1,7 +1,6 @@
 "use client"
 import Link from "next/link";
-import Image from "next/image";
-import { Rating } from "./ui";
+import { Rating, SalonCover } from "./ui";
 import { MapPinIcon, ArrowRightIcon } from "./Icons";
 import type { Salon } from "../lib/data";
 import { getAverageReviewsForSalon, getReviewsForSalon } from "@/services/reviews";
@@ -39,13 +38,12 @@ useEffect(() => {
       className="group flex h-full flex-col bg-white rounded-3xl border border-[var(--border)] shadow-softer hover-lift overflow-hidden"
     >
       <div className="relative aspect-[4/3] overflow-hidden">
-        <Image
+        <SalonCover
+          name={salon.name}
           src={salon.cover}
-          alt={salon.name}
-          fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
-          className="object-cover group-hover:scale-105 transition duration-500"
-          unoptimized
+          imageClassName="object-cover group-hover:scale-105 transition duration-500"
+          initialsClassName="text-5xl"
         />
         <div className="absolute inset-x-0 top-0 p-4 flex items-start justify-between">
         

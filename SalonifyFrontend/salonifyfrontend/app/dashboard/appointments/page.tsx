@@ -13,10 +13,7 @@ import {
 
 import { AppointmentApi } from "@/types/appointments";
 
-import {
-  mapServiceTypeToSr,
-  mapAppointmentStatusToSr,
-} from "@/mappers/appointment";
+import { mapAppointmentStatusToSr } from "@/mappers/appointment";
 
 const APPT_TABS = [
   "All",
@@ -201,7 +198,7 @@ export default function AppointmentsPage() {
                     </p>
 
                     <p className="text-xs text-muted truncate">
-                      {mapServiceTypeToSr(a.serviceType)}
+                      {a.serviceName || a.serviceType}
                     </p>
                   </div>
                 </div>
@@ -278,7 +275,7 @@ export default function AppointmentsPage() {
         <div className="flex justify-between border-b border-[var(--border)] pb-2">
           <span className="text-muted">Usluga</span>
           <span className="font-medium">
-            {mapServiceTypeToSr(selectedAppointment.serviceType)}
+            {selectedAppointment.serviceName || selectedAppointment.serviceType}
           </span>
         </div>
 

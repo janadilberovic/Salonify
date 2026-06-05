@@ -84,3 +84,11 @@ C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.deps.json
 C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.runtimeconfig.json
 C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.dll
 C:\Users\Jana\Desktop\faks\diplomski\api-build-check\Salonify.Api.pdb
+C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\appsettings.Development.json
+C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\appsettings.json
+C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.staticwebassets.runtime.json
+C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.staticwebassets.endpoints.json
+C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.deps.json
+C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.runtimeconfig.json
+C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.dll
+C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.pdb

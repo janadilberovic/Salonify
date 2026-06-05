@@ -5,6 +5,7 @@ public class UserAppointmentResponseDTO
     public string SalonName { get; set; }
     public string SalonImageUrl { get; set; }
     public ServiceType ServiceType { get; set; }
+    public string ServiceName { get; set; } = string.Empty;
     public string? ServiceImageUrl { get; set; }
 
     public decimal Price { get; set; }

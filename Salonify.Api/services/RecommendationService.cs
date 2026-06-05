@@ -30,11 +30,23 @@ public class RecommendationService
 
         var salons = await _salonRepository.GetAllAsync();
 
-        return salons
-            .Select(salon => BuildRecommendation(salon, user.PreferenceVector, activities))
-            .Where(x => x != null)
-            .Select(x => x!)
-            .Where(x => x.SimilarityScore > 0)
+        var recommendations = new List<SalonRecommendationDto>();
+
+        foreach (var salon in salons)
+        {
+            var recommendation = BuildRecommendation(
+                salon,
+                user.PreferenceVector,
+                activities
+            );
+
+            if (recommendation != null && recommendation.SimilarityScore > 0)
+            {
+                recommendations.Add(recommendation);
+            }
+        }
+
+        return recommendations
             .OrderByDescending(x => x.SimilarityScore)
             .ThenBy(x => x.SalonName)
             .Take(limit)
@@ -51,9 +63,11 @@ public class RecommendationService
         Dictionary<string, double> preferenceVector,
         List<UserActivity> activities)
     {
-        var featureVector = salon.FeatureVector.Count > 0
-            ? salon.FeatureVector
-            : BuildSalonFeatureVector(salon.Services);
+        var storedFeatureVector = salon.FeatureVector ?? new Dictionary<string, double>();
+        var services = salon.Services ?? new List<SalonService>();
+        var featureVector = storedFeatureVector.Count > 0
+            ? storedFeatureVector
+            : BuildSalonFeatureVector(services);
 
         if (featureVector.Count == 0)
             return null;
@@ -76,6 +90,7 @@ public class RecommendationService
             .OrderByDescending(x => x.Weight)
             .ThenByDescending(x => x.CreatedAt)
             .FirstOrDefault();
+        var reasonServiceName = GetServiceName(services, reasonServiceType);
 
         return new SalonRecommendationDto
         {
@@ -84,12 +99,34 @@ public class RecommendationService
             Salon = salon,
             SimilarityScore = similarityScore,
             ReasonServiceType = reasonServiceType,
+            ReasonServiceName = string.IsNullOrWhiteSpace(reasonServiceName)
+                ? string.Empty
+                : reasonServiceName,
             ReasonActivityType = reasonActivity?.ActivityType
         };
     }
 
-    private static Dictionary<string, double> BuildSalonFeatureVector(List<SalonService> services)
+    private static string GetServiceName(
+        List<SalonService>? services,
+        ServiceType serviceType)
     {
+        if (services == null || services.Count == 0)
+            return string.Empty;
+
+        foreach (var service in services)
+        {
+            if (service.ServiceType == serviceType && !string.IsNullOrWhiteSpace(service.Name))
+                return service.Name;
+        }
+
+        return string.Empty;
+    }
+
+    private static Dictionary<string, double> BuildSalonFeatureVector(List<SalonService>? services)
+    {
+        if (services == null || services.Count == 0)
+            return new Dictionary<string, double>();
+
         return services
             .Where(x => x.ServiceType != ServiceType.Other)
             .GroupBy(x => x.ServiceType.ToString())

@@ -247,7 +247,7 @@ public class SalonController : ControllerBase
         {
             ServiceType = request.ServiceType,
             Description = request.Description,
-            Name = request.ServiceType.ToString(),
+            Name = request.Name,
             Price = request.Price,
             DurationMinutes = request.DurationMinutes,
             ImageUrl = imageUrl

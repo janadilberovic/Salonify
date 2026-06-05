@@ -8,6 +8,7 @@ public class AppointmentResponseDTO
     public string CustomerPhone { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public ServiceType ServiceType { get; set; }
+    public string ServiceName { get; set; } = string.Empty;
     public DateOnly AppointmentDate { get; set; }
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }

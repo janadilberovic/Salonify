@@ -168,6 +168,9 @@ public class AppointmentController : ControllerBase
                 SalonName = salon?.Name ?? "Nepoznat salon",
                 SalonImageUrl = salon?.ImageUrl ?? "",
                 ServiceType = appointment.ServiceType,
+                ServiceName = string.IsNullOrWhiteSpace(appointment.ServiceName)
+                    ? service?.Name ?? string.Empty
+                    : appointment.ServiceName,
                 ServiceImageUrl = service?.ImageUrl,
                 Price = appointment.Price,
                 AppointmentDate = appointment.AppointmentDate,
@@ -217,6 +220,7 @@ public class AppointmentController : ControllerBase
                 CustomerPhone = user?.Phone ?? "",
                 SalonId = item.SalonId,
                 ServiceType = item.ServiceType,
+                ServiceName = item.ServiceName,
                 Price = item.Price,
                 AppointmentDate = item.AppointmentDate,
                 StartTime = item.StartTime,

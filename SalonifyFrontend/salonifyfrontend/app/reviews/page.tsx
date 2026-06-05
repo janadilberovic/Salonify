@@ -13,6 +13,7 @@ import {
   Textarea,
   Label,
   Input,
+  SalonCover,
 } from "../components/ui";
 import {
   StarIcon,
@@ -461,12 +462,12 @@ export default function ReviewsPage() {
                         className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-[var(--border)]"
                         title={salon.name}
                       >
-                        <Image
+                        <SalonCover
+                          name={salon.name}
                           src={salon.cover}
-                          alt={salon.name}
-                          fill
                           sizes="40px"
-                          className="object-cover"
+                          imageClassName="object-cover"
+                          initialsClassName="text-base"
                         />
                       </Link>
                     )}

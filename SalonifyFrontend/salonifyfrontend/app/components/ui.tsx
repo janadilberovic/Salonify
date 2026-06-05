@@ -314,3 +314,61 @@ export function Avatar({
     </span>
   );
 }
+
+/* ---------- Salon cover ---------- */
+
+function getInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+export function SalonCover({
+  name,
+  src,
+  sizes = "100vw",
+  className = "",
+  imageClassName = "object-cover",
+  initialsClassName = "text-5xl",
+  priority = false,
+  unoptimized = true,
+}: {
+  name: string;
+  src?: string | null;
+  sizes?: string;
+  className?: string;
+  imageClassName?: string;
+  initialsClassName?: string;
+  priority?: boolean;
+  unoptimized?: boolean;
+}) {
+  const initials = getInitials(name || "Salon") || "S";
+
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt={name}
+        fill
+        sizes={sizes}
+        className={imageClassName}
+        priority={priority}
+        unoptimized={unoptimized}
+      />
+    );
+  }
+
+  return (
+    <span
+      aria-label={name}
+      className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#efdff9] to-[#f9d3e3] text-[#6e4c9a] font-display font-semibold ${className}`}
+    >
+      <span className={`${initialsClassName} leading-none`}>{initials}</span>
+    </span>
+  );
+}

@@ -3,7 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import { Rating, EyebrowLabel, LinkButton } from "../../components/ui";
+import { Rating, EyebrowLabel, LinkButton, SalonCover } from "../../components/ui";
 import {
   MapPinIcon,
   PhoneIcon,
@@ -85,14 +85,13 @@ export default async function SalonPage({
       <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-6">
         <div className="grid lg:grid-cols-[1.1fr_1fr] gap-4 lg:gap-6">
           <div className="relative aspect-[5/4] lg:aspect-[6/5] rounded-[2rem] overflow-hidden shadow-soft">
-            <Image
+            <SalonCover
+              name={salon.name}
               src={salon.cover}
-              alt={salon.name}
-              fill
               sizes="(max-width: 1024px) 100vw, 720px"
-              className="object-cover"
+              imageClassName="object-cover"
+              initialsClassName="text-7xl"
               priority
-              unoptimized
             />
             <div className="absolute inset-x-0 top-0 p-5 flex items-start justify-between">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/90 backdrop-blur px-3 h-8 rounded-full shadow-softer">
@@ -338,13 +337,12 @@ function RelatedCard({ salon }: { salon: Salon }) {
       className="group bg-white rounded-3xl border border-[var(--border)] shadow-softer overflow-hidden hover-lift"
     >
       <div className="relative aspect-[16/10]">
-        <Image
+        <SalonCover
+          name={salon.name}
           src={salon.cover}
-          alt={salon.name}
-          fill
           sizes="(max-width: 1024px) 50vw, 320px"
-          className="object-cover group-hover:scale-105 transition"
-          unoptimized
+          imageClassName="object-cover group-hover:scale-105 transition"
+          initialsClassName="text-5xl"
         />
       </div>
       <div className="p-5">

@@ -8,6 +8,7 @@ export type RecommendedSalon = {
   similarityScore: number;
   salon: ReturnType<typeof mapSalonApiToUI>;
   reasonServiceType: string | number;
+  reasonServiceName?: string | null;
   reasonActivityType?: string | number | null;
 };
 
@@ -17,6 +18,7 @@ type RecommendedSalonApi = {
   similarityScore: number;
   salon: SalonApi;
   reasonServiceType: string | number;
+  reasonServiceName?: string | null;
   reasonActivityType?: string | number | null;
 };
 

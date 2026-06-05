@@ -6,11 +6,15 @@ public class ReviewRepository
 {
     private readonly IMongoCollection<Review> _reviews;
     private readonly IMongoCollection<User> _users;
+    private readonly IMongoCollection<Appointment> _appointments;
+    private readonly IMongoCollection<Salon> _salons;
 
     public ReviewRepository(MongoDbContext context)
     {
         _reviews = context.Reviews;
         _users = context.Users;
+        _appointments = context.Appointments;
+        _salons = context.Salons;
     }
 
     //CRUD
@@ -147,6 +151,27 @@ public class ReviewRepository
         foreach (var review in reviews)
         {
             var user = await _users.Find(u => u.Id == review.UserId).FirstOrDefaultAsync();
+            var serviceName = review.ServiceName;
+
+            if (string.IsNullOrWhiteSpace(serviceName) && !string.IsNullOrWhiteSpace(review.AppointmentId))
+            {
+                var appointment = await _appointments
+                    .Find(a => a.Id == review.AppointmentId)
+                    .FirstOrDefaultAsync();
+
+                serviceName = appointment?.ServiceName ?? string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                var salon = await _salons
+                    .Find(s => s.Id == review.SalonId)
+                    .FirstOrDefaultAsync();
+
+                serviceName = salon?.Services
+                    .FirstOrDefault(service => service.ServiceType == review.ServiceType)
+                    ?.Name ?? string.Empty;
+            }
 
             result.Add(new ReviewResponseDTO
             {
@@ -156,9 +181,7 @@ public class ReviewRepository
                 CreatedAt = review.CreatedAt,
                 AppointmentId = review.AppointmentId,
                 UserName = user != null ? user.DisplayName : "Korisnik",
-                ServiceName = string.IsNullOrWhiteSpace(review.ServiceName)
-                    ? review.ServiceType.ToString()
-                    : review.ServiceName,
+                ServiceName = serviceName,
                 ServiceType = review.ServiceType
             });
         }

@@ -10,5 +10,7 @@ public class SalonRecommendationDto
 
     public ServiceType ReasonServiceType { get; set; }
 
+    public string ReasonServiceName { get; set; } = string.Empty;
+
     public ActivityType? ReasonActivityType { get; set; }
 }
