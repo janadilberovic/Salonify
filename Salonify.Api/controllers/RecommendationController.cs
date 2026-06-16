@@ -9,13 +9,16 @@ public class RecommendationController : ControllerBase
 {
     private readonly RecommendationService _recommendationService;
     private readonly ActivityTrackingService _activityTrackingService;
+    private readonly UserRepository _userRepository;
 
     public RecommendationController(
         RecommendationService recommendationService,
-        ActivityTrackingService activityTrackingService)
+        ActivityTrackingService activityTrackingService,
+        UserRepository userRepository)
     {
         _recommendationService = recommendationService;
         _activityTrackingService = activityTrackingService;
+        _userRepository = userRepository;
     }
 
     [Authorize(Roles = "User,Admin")]
@@ -48,5 +51,14 @@ public class RecommendationController : ControllerBase
         await _activityTrackingService.UpdateAllSalonFeatureVectorsAsync();
 
         return Ok(new { message = "FeatureVector je osvezen za sve salone." });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPost("normalize-user-preference-vectors")]
+    public async Task<IActionResult> NormalizeUserPreferenceVectors()
+    {
+        await _userRepository.NormalizeAllPreferenceVectorsAsync();
+
+        return Ok(new { message = "PreferenceVector je normalizovan za sve korisnike." });
     }
 }

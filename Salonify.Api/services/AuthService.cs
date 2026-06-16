@@ -17,6 +17,9 @@ public class AuthService
     public async Task RegisterAsync(RegisterRequest request)
     {
 
+        if (request.Role == UserRole.Admin)
+            throw new Exception("Admin se ne moze registrovati javno.");
+
         var existingUser = await _userRepository.GetByEmailAsync(request.Email);
         if (existingUser != null)
             throw new Exception("Email je već u upotrebi.");

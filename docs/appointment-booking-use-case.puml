@@ -1,0 +1,57 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Korisnik" as User
+actor "Salon" as Salon
+
+rectangle "Salonify aplikacija" {
+  usecase "Prijavljuje se" as UC_Login
+  usecase "Pretrazuje salone" as UC_Search
+  usecase "Pregleda detalje salona" as UC_Details
+  usecase "Pregleda dostupne usluge" as UC_Services
+  usecase "Bira uslugu" as UC_SelectService
+  usecase "Evidentira pregled usluge" as UC_TrackService
+  usecase "Bira datum" as UC_SelectDate
+  usecase "Pregleda dostupne termine" as UC_AvailableSlots
+  usecase "Bira vreme termina" as UC_SelectTime
+  usecase "Unosi napomenu za salon" as UC_Note
+  usecase "Salje zahtev za zakazivanje" as UC_CreateAppointment
+  usecase "Pregleda svoje rezervacije" as UC_UserAppointments
+  usecase "Pregleda zahteve za termine" as UC_SalonAppointments
+  usecase "Prihvata termin" as UC_AcceptAppointment
+  usecase "Odbija termin" as UC_RejectAppointment
+  usecase "Dobija status rezervacije" as UC_ReservationStatus
+}
+
+User --> UC_Login
+User --> UC_Search
+User --> UC_Details
+User --> UC_Services
+User --> UC_SelectService
+User --> UC_SelectDate
+User --> UC_AvailableSlots
+User --> UC_SelectTime
+User --> UC_CreateAppointment
+User --> UC_UserAppointments
+
+Salon --> UC_SalonAppointments
+Salon --> UC_AcceptAppointment
+Salon --> UC_RejectAppointment
+
+UC_SelectService ..> UC_TrackService : <<include>>
+UC_SelectService ..> UC_AvailableSlots : <<include>>
+UC_SelectDate ..> UC_AvailableSlots : <<include>>
+UC_SelectTime ..> UC_CreateAppointment : <<include>>
+UC_Note ..> UC_CreateAppointment : <<extend>>
+UC_CreateAppointment ..> UC_SalonAppointments : <<include>>
+UC_AcceptAppointment ..> UC_ReservationStatus : <<include>>
+UC_RejectAppointment ..> UC_ReservationStatus : <<include>>
+UC_ReservationStatus ..> UC_UserAppointments : <<include>>
+
+note right of UC_CreateAppointment
+  Nakon slanja zahteva termin dobija
+  status Pending dok salon ne odgovori.
+end note
+
+@enduml

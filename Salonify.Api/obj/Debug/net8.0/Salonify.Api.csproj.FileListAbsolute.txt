@@ -2,7 +2,6 @@ C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\appsettings.D
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\appsettings.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.staticwebassets.runtime.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.staticwebassets.endpoints.json
-C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.exe
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.deps.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.runtimeconfig.json
 C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.dll
@@ -92,3 +91,13 @@ C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.deps.json
 C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.runtimeconfig.json
 C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.dll
 C:\Users\Jana\Desktop\faks\diplomski\.tmp\api-build\Salonify.Api.pdb
+C:\Users\Jana\Desktop\faks\diplomski\Salonify.Api\bin\Debug\net8.0\Salonify.Api.exe
+C:\Users\Jana\Desktop\faks\diplomski\tmp\admin-build-check\appsettings.Development.json
+C:\Users\Jana\Desktop\faks\diplomski\tmp\admin-build-check\appsettings.json
+C:\Users\Jana\Desktop\faks\diplomski\tmp\admin-build-check\Salonify.Api.staticwebassets.runtime.json
+C:\Users\Jana\Desktop\faks\diplomski\tmp\admin-build-check\Salonify.Api.staticwebassets.endpoints.json
+C:\Users\Jana\Desktop\faks\diplomski\tmp\admin-build-check\Salonify.Api.exe
+C:\Users\Jana\Desktop\faks\diplomski\tmp\admin-build-check\Salonify.Api.deps.json
+C:\Users\Jana\Desktop\faks\diplomski\tmp\admin-build-check\Salonify.Api.runtimeconfig.json
+C:\Users\Jana\Desktop\faks\diplomski\tmp\admin-build-check\Salonify.Api.dll
+C:\Users\Jana\Desktop\faks\diplomski\tmp\admin-build-check\Salonify.Api.pdb

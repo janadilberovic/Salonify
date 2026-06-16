@@ -41,7 +41,7 @@ export default function Navbar() {
     setRole(storedRole);
     setName(localStorage.getItem("displayName") || localStorage.getItem("Name"));
 
-    if (storedRole === "Salon" || storedRole === "Admin") {
+    if (storedRole === "Salon") {
       getAppointmentsForSalon()
         .then((data) => setNotificationSummary(countSalonNotifications(data)))
         .catch(() => setNotificationSummary(emptyNotifications()));
@@ -62,14 +62,17 @@ export default function Navbar() {
   const isSalon = role === "Salon";
   const isUser = role === "User";
   const isAdmin = role === "Admin";
-  const notificationsHref =
-    isSalon || isAdmin ? "/dashboard/appointments" : "/appointments";
+  const showNotifications = isSalon || isUser;
+  const notificationsHref = isSalon
+    ? "/dashboard/appointments"
+    : "/appointments";
 
   const NAV = [
     { href: "/salons", label: "Saloni", show: isSalon || isUser || isAdmin },
     { href: "/appointments", label: "Moji termini", show: isUser },
     { href: "/account", label: "Moj profil", show: isUser },
-    { href: "/dashboard", label: "Dashboard", show: isSalon || isAdmin },
+    { href: "/dashboard", label: "Dashboard", show: isSalon },
+    { href: "/admin", label: "Admin", show: isAdmin },
     { href: "/reviews", label: "Recenzije", show: isSalon || isAdmin },
     { href: "/recommended", label: "Preporuceno", show: isUser },
   ].filter((item) => item.show);
@@ -132,7 +135,7 @@ export default function Navbar() {
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
-            {isLoggedIn && (
+            {showNotifications && (
               <div className="relative">
                 <button
                   aria-label="Obavestenja"
@@ -155,7 +158,7 @@ export default function Navbar() {
                   <div className="absolute right-0 top-full z-50 mt-3 w-80 overflow-hidden rounded-3xl border border-white/80 bg-white p-3 shadow-lift">
                     {notificationSummary.count > 0 ? (
                       <div className="space-y-2">
-                        {(isSalon || isAdmin) &&
+                        {isSalon &&
                           notificationSummary.pending > 0 && (
                             <NotificationRow
                               title={`${notificationSummary.pending} termina za prihvatanje`}
@@ -163,7 +166,7 @@ export default function Navbar() {
                             />
                           )}
 
-                        {(isSalon || isAdmin) && notificationSummary.today > 0 && (
+                        {isSalon && notificationSummary.today > 0 && (
                           <NotificationRow
                             title={`${notificationSummary.today} termina danas`}
                             text="Pogledaj raspored za danasnji dan."

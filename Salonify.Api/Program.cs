@@ -108,6 +108,8 @@ builder.Services.AddControllers();
 // ===== APP =====
 var app = builder.Build();
 
+await AdminSeedService.SeedAdminAsync(app.Services);
+
 // ===== MIDDLEWARE =====
 if (app.Environment.IsDevelopment())
 {

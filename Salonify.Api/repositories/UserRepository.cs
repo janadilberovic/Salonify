@@ -31,7 +31,17 @@ public class UserRepository
 
     public async Task IncrementPreferenceAsync(string userId, string featureKey, double amount)
     {
-        var update = Builders<User>.Update.Inc($"PreferenceVector.{featureKey}", amount);
+        var user = await GetByIdAsync(userId);
+
+        if (user == null)
+            return;
+
+        var preferenceVector = NormalizePreferenceVector(user.PreferenceVector);
+        preferenceVector.TryGetValue(featureKey, out var currentValue);
+        preferenceVector[featureKey] = Math.Min(currentValue + amount, 1.0);
+
+        var update = Builders<User>.Update
+            .Set(x => x.PreferenceVector, preferenceVector);
 
         await _users.UpdateOneAsync(u => u.Id == userId, update);
     }
@@ -41,14 +51,49 @@ public class UserRepository
         if (preferences.Count == 0)
             return;
 
-        var updates = preferences
-            .Select(x => Builders<User>.Update.Inc($"PreferenceVector.{x.Key}", x.Value))
-            .ToList();
+        var user = await GetByIdAsync(userId);
 
-        await _users.UpdateOneAsync(
-            u => u.Id == userId,
-            Builders<User>.Update.Combine(updates)
-        );
+        if (user == null)
+            return;
+
+        var preferenceVector = NormalizePreferenceVector(user.PreferenceVector);
+
+        foreach (var preference in preferences)
+        {
+            preferenceVector.TryGetValue(preference.Key, out var currentValue);
+            preferenceVector[preference.Key] = Math.Min(currentValue + preference.Value, 1.0);
+        }
+
+        var update = Builders<User>.Update
+            .Set(x => x.PreferenceVector, preferenceVector);
+
+        await _users.UpdateOneAsync(u => u.Id == userId, update);
+    }
+
+    public async Task NormalizePreferenceVectorAsync(string userId)
+    {
+        var user = await GetByIdAsync(userId);
+
+        if (user == null)
+            return;
+
+        var update = Builders<User>.Update
+            .Set(x => x.PreferenceVector, NormalizePreferenceVector(user.PreferenceVector));
+
+        await _users.UpdateOneAsync(u => u.Id == userId, update);
+    }
+
+    public async Task NormalizeAllPreferenceVectorsAsync()
+    {
+        var users = await _users.Find(_ => true).ToListAsync();
+
+        foreach (var user in users)
+        {
+            var update = Builders<User>.Update
+                .Set(x => x.PreferenceVector, NormalizePreferenceVector(user.PreferenceVector));
+
+            await _users.UpdateOneAsync(u => u.Id == user.Id, update);
+        }
     }
 
     public async Task UpdateContactAsync(string userId, string displayName, string phone)
@@ -58,5 +103,30 @@ public class UserRepository
             .Set(u => u.Phone, phone);
 
         await _users.UpdateOneAsync(u => u.Id == userId, update);
+    }
+
+    private static Dictionary<string, double> NormalizePreferenceVector(
+        Dictionary<string, double>? preferenceVector)
+    {
+        if (preferenceVector == null || preferenceVector.Count == 0)
+            return new Dictionary<string, double>();
+
+        var positivePreferences = preferenceVector
+            .Where(x => x.Value > 0)
+            .ToDictionary(x => x.Key, x => x.Value);
+
+        if (positivePreferences.Count == 0)
+            return new Dictionary<string, double>();
+
+        var maxValue = positivePreferences.Values.Max();
+
+        if (maxValue <= 1.0)
+        {
+            return positivePreferences
+                .ToDictionary(x => x.Key, x => Math.Clamp(x.Value, 0.0, 1.0));
+        }
+
+        return positivePreferences
+            .ToDictionary(x => x.Key, x => Math.Clamp(x.Value / maxValue, 0.0, 1.0));
     }
 }

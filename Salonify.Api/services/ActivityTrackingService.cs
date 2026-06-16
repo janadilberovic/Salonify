@@ -4,6 +4,8 @@ namespace Salonify.Api.Services;
 
 public class ActivityTrackingService
 {
+    private const double ServiceCountSaturation = 3.0;
+    private const double MaxActivityWeight = 7.0;
     private readonly UserActivityRepository _userActivityRepository;
     private readonly UserRepository _userRepository;
     private readonly SalonRepository _salonRepository;
@@ -39,7 +41,11 @@ public class ActivityTrackingService
             CreatedAt = DateTime.UtcNow
         });
 
-        await _userRepository.IncrementPreferenceAsync(userId, GetFeatureKey(serviceType), weight);
+        await _userRepository.IncrementPreferenceAsync(
+            userId,
+            GetFeatureKey(serviceType),
+            NormalizeActivityWeight(weight)
+        );
     }
 
     public async Task TrackSalonAsync(
@@ -66,13 +72,17 @@ public class ActivityTrackingService
 
         if (featureVector.Count == 0)
         {
-            await _userRepository.IncrementPreferenceAsync(userId, GetFeatureKey(ServiceType.Other), weight);
+            await _userRepository.IncrementPreferenceAsync(
+                userId,
+                GetFeatureKey(ServiceType.Other),
+                NormalizeActivityWeight(weight)
+            );
             return;
         }
 
         await _userRepository.IncrementPreferencesAsync(
             userId,
-            featureVector.ToDictionary(x => x.Key, x => x.Value * weight)
+            featureVector.ToDictionary(x => x.Key, x => x.Value * NormalizeActivityWeight(weight))
         );
     }
 
@@ -113,7 +123,10 @@ public class ActivityTrackingService
 
         return salon.Services
             .GroupBy(x => GetFeatureKey(x.ServiceType))
-            .ToDictionary(x => x.Key, x => (double)x.Count());
+            .ToDictionary(
+                x => x.Key,
+                x => Math.Min(x.Count() / ServiceCountSaturation, 1.0)
+            );
     }
 
     private static ServiceType GetPrimaryServiceType(Dictionary<string, double> featureVector)
@@ -131,5 +144,10 @@ public class ActivityTrackingService
     private static string GetFeatureKey(ServiceType serviceType)
     {
         return serviceType.ToString();
+    }
+
+    private static double NormalizeActivityWeight(double weight)
+    {
+        return Math.Clamp(weight / MaxActivityWeight, 0.0, 1.0);
     }
 }
