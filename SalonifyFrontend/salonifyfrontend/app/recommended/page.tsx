@@ -49,7 +49,7 @@ export default function RecommendedPage() {
     <>
       <Navbar />
 
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 pt-10 lg:pt-14">
+      <section className="w-full px-6 lg:px-10 pt-10 lg:pt-14">
         <div className="relative rounded-[2.5rem] overflow-hidden p-8 sm:p-12 bg-gradient-to-br from-white via-[#fdf0f7] to-[#f4e6f7] border border-white/80 shadow-softer">
           <div className="absolute -top-20 -right-20 size-72 rounded-full bg-primary-soft blur-3xl" />
           <div className="absolute -bottom-24 -left-20 size-80 rounded-full bg-accent-soft blur-3xl" />
@@ -74,7 +74,7 @@ export default function RecommendedPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 lg:px-10 mt-10 pb-20">
+      <section className="w-full px-6 lg:px-10 mt-10 pb-20">
         {loading ? (
           <div className="text-center py-20">
             <p className="text-muted">Ucitavanje preporucenih salona...</p>
@@ -124,27 +124,45 @@ export default function RecommendedPage() {
                     <ChevronRightIcon width={18} height={18} />
                   </button>
                 </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            <div
-              ref={carouselRef}
-              className="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {recommendations.map((recommendation) => (
-                <div
-                  key={recommendation.salonId}
-                  className="flex min-w-0 shrink-0 basis-full snap-start flex-col gap-3 sm:basis-[calc((100%_-_1.5rem)/2)] lg:basis-[calc((100%_-_3rem)/3)]"
-                >
-                  <div className="flex-1">
-                    <SalonCard salon={recommendation.salon} featured={false} />
+            {recommendations.length <= 3 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {recommendations.map((recommendation) => (
+                  <div
+                    key={recommendation.salonId}
+                    className="flex min-w-0 flex-col gap-3"
+                  >
+                    <div className="flex-1">
+                      <SalonCard salon={recommendation.salon} featured={false} />
+                    </div>
+                    <p className="min-h-10 px-1 text-sm leading-5 text-muted">
+                      {getRecommendationReason(recommendation)}
+                    </p>
                   </div>
-                  <p className="min-h-10 px-1 text-sm leading-5 text-muted">
-                    {getRecommendationReason(recommendation)}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                ref={carouselRef}
+                className="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {recommendations.map((recommendation) => (
+                  <div
+                    key={recommendation.salonId}
+                    className="flex min-w-0 shrink-0 basis-full snap-start flex-col gap-3 sm:basis-[calc((100%_-_1.5rem)/2)] lg:basis-[calc((100%_-_3rem)/3)]"
+                  >
+                    <div className="flex-1">
+                      <SalonCard salon={recommendation.salon} featured={false} />
+                    </div>
+                    <p className="min-h-10 px-1 text-sm leading-5 text-muted">
+                      {getRecommendationReason(recommendation)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </section>
