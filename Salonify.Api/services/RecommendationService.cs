@@ -73,7 +73,7 @@ public class RecommendationService
         return GetRecommendedSalonsAsync(userId);
     }
 
-    private static SalonRecommendationDto? BuildRecommendation(
+    internal static SalonRecommendationDto? BuildRecommendation(
         Salon salon,
         Dictionary<string, double> preferenceVector,
         List<UserActivity> activities)
@@ -138,7 +138,7 @@ public class RecommendationService
         return string.Empty;
     }
 
-    private static Dictionary<string, double> BuildSalonFeatureVector(List<SalonService>? services)
+    internal static Dictionary<string, double> BuildSalonFeatureVector(List<SalonService>? services)
     {
         if (services == null || services.Count == 0)
             return new Dictionary<string, double>();
@@ -152,7 +152,7 @@ public class RecommendationService
             );
     }
 
-    private static Dictionary<string, double> NormalizePreferenceVector(
+    internal static Dictionary<string, double> NormalizePreferenceVector(
         Dictionary<string, double> preferenceVector)
     {
         if (preferenceVector.Count == 0)
@@ -175,7 +175,7 @@ public class RecommendationService
             .ToDictionary(x => x.Key, x => Math.Min(x.Value / maxValue, 1.0));
     }
 
-    private static Dictionary<string, double> NormalizeFeatureVector(
+    internal static Dictionary<string, double> NormalizeFeatureVector(
         Dictionary<string, double> featureVector)
     {
         if (featureVector.Count == 0)
@@ -251,7 +251,7 @@ public class RecommendationService
             : new RecommendationReason(ServiceType.Other, null);
     }
 
-    private static double CalculateCosineSimilarity(
+    internal static double CalculateCosineSimilarity(
         Dictionary<string, double> preferenceVector,
         Dictionary<string, double> featureVector)
     {
