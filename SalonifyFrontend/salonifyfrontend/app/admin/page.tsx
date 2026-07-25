@@ -1,16 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useState } from "react";
-import Link from "next/link";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import { Button, EyebrowLabel } from "../components/ui";
+import { useEffect, useState } from "react";
+import { EyebrowLabel, Button, Rating, StatusBadge } from "../components/ui";
 import {
   refreshSalonFeatureVectors,
   normalizeUserPreferenceVectors,
+  getAdminStats,
 } from "@/services/admin";
-import { DashboardIcon, StarIcon } from "../components/Icons";
+import { AdminStats } from "@/types/admin";
 
 type ActionState = {
   loading: boolean;
@@ -24,6 +21,14 @@ const initialActionState: ActionState = {
   error: "",
 };
 
+const STATUS_ORDER = [
+  "Pending",
+  "Approved",
+  "Completed",
+  "Rejected",
+  "Cancelled",
+] as const;
+
 export default function AdminPage() {
   const [displayName] = useState(() => {
     if (typeof window === "undefined") {
@@ -32,10 +37,28 @@ export default function AdminPage() {
 
     return localStorage.getItem("displayName") || "Admin";
   });
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [featureVectors, setFeatureVectors] =
     useState<ActionState>(initialActionState);
   const [preferenceVectors, setPreferenceVectors] =
     useState<ActionState>(initialActionState);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        setStatsLoading(true);
+        const data = await getAdminStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Greška pri učitavanju statistike:", error);
+      } finally {
+        setStatsLoading(false);
+      }
+    }
+
+    loadStats();
+  }, []);
 
   async function runAction(
     action: () => Promise<{ message: string }>,
@@ -58,76 +81,129 @@ export default function AdminPage() {
   }
 
   return (
-    <>
-      <Navbar />
+    <div className="space-y-8">
+      <section className="rounded-[2rem] border border-white/80 bg-white/80 p-8 shadow-softer">
+        <EyebrowLabel>Admin panel</EyebrowLabel>
 
-      <main className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-14">
-        <section className="rounded-[2rem] border border-white/80 bg-white/80 p-8 shadow-softer">
-          <EyebrowLabel>Admin panel</EyebrowLabel>
-
-          <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="font-display text-4xl font-semibold tracking-tight">
-                Dobrodosla, {displayName}
-              </h1>
-              <p className="mt-3 max-w-2xl text-muted">
-                Upravljaj sistemskim podacima, preporukama i kontrolnim
-                akcijama za Salonify.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-muted">
-              Prijavljena si kao <span className="font-semibold text-primary">Admin</span>
-            </div>
+        <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="font-display text-4xl font-semibold tracking-tight">
+              Dobrodosla, {displayName}
+            </h1>
+            <p className="mt-3 max-w-2xl text-muted">
+              Upravljaj sistemskim podacima, preporukama i kontrolnim akcijama
+              za Salonify.
+            </p>
           </div>
-        </section>
 
-        <section className="mt-8 grid gap-5 lg:grid-cols-2">
-          <AdminActionCard
-            title="Osvezi vektore salona"
-            text="Ponovo racuna FeatureVector za sve salone na osnovu njihovih usluga."
-            state={featureVectors}
-            buttonText="Osvezi salone"
-            onRun={() =>
-              runAction(refreshSalonFeatureVectors, setFeatureVectors)
-            }
-          />
-
-          <AdminActionCard
-            title="Normalizuj korisnicke vektore"
-            text="Sređuje PreferenceVector za sve korisnike tako da vrednosti ostanu izmedju 0 i 1."
-            state={preferenceVectors}
-            buttonText="Normalizuj korisnike"
-            onRun={() =>
-              runAction(normalizeUserPreferenceVectors, setPreferenceVectors)
-            }
-          />
-        </section>
-
-        <section className="mt-8">
-          <h2 className="font-display text-2xl font-semibold">
-            Brzi pristup
-          </h2>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <AdminLinkCard
-              href="/reviews"
-              icon={<StarIcon width={20} height={20} />}
-              title="Recenzije"
-              text="Pregled recenzija i moderatorske akcije."
-            />
-            <AdminLinkCard
-              href="/salons"
-              icon={<DashboardIcon width={20} height={20} />}
-              title="Saloni"
-              text="Pregled javnih salon profila."
-            />
+          <div className="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-muted">
+            Prijavljena si kao{" "}
+            <span className="font-semibold text-primary">Admin</span>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
 
-      <Footer />
-    </>
+      {statsLoading ? (
+        <p className="text-muted">Učitavanje statistike...</p>
+      ) : stats ? (
+        <>
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard title="Korisnici" value={stats.totalUsers} />
+            <StatCard title="Saloni" value={stats.totalSalons} />
+            <StatCard title="Termini" value={stats.totalAppointments} />
+            <StatCard title="Recenzije" value={stats.totalReviews} />
+          </section>
+
+          <section className="grid gap-5 lg:grid-cols-2">
+            <article className="rounded-[1.5rem] border border-[var(--border)] bg-white p-6 shadow-softer">
+              <h2 className="font-display text-2xl font-semibold">
+                Termini po statusu
+              </h2>
+
+              <ul className="mt-4 space-y-3">
+                {STATUS_ORDER.map((status) => (
+                  <li
+                    key={status}
+                    className="flex items-center justify-between"
+                  >
+                    <StatusBadge status={status} />
+                    <span className="font-display text-lg font-semibold">
+                      {stats.appointmentsByStatus[status] ?? 0}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="rounded-[1.5rem] border border-[var(--border)] bg-white p-6 shadow-softer">
+              <h2 className="font-display text-2xl font-semibold">
+                Top saloni
+              </h2>
+
+              {stats.topSalons.length === 0 ? (
+                <p className="mt-4 text-sm text-muted">
+                  Još nema salona sa recenzijama.
+                </p>
+              ) : (
+                <ul className="mt-4 space-y-3">
+                  {stats.topSalons.map((salon) => (
+                    <li
+                      key={salon.salonId}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{salon.name}</p>
+                        <p className="text-xs text-muted">{salon.city}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Rating value={salon.averageRating} showValue />
+                        <span className="text-xs text-muted">
+                          ({salon.reviewCount})
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </article>
+          </section>
+        </>
+      ) : (
+        <p className="text-muted">Statistika trenutno nije dostupna.</p>
+      )}
+
+      <section className="grid gap-5 lg:grid-cols-2">
+        <AdminActionCard
+          title="Osvezi vektore salona"
+          text="Ponovo racuna FeatureVector za sve salone na osnovu njihovih usluga."
+          state={featureVectors}
+          buttonText="Osvezi salone"
+          onRun={() => runAction(refreshSalonFeatureVectors, setFeatureVectors)}
+        />
+
+        <AdminActionCard
+          title="Normalizuj korisnicke vektore"
+          text="Sređuje PreferenceVector za sve korisnike tako da vrednosti ostanu izmedju 0 i 1."
+          state={preferenceVectors}
+          buttonText="Normalizuj korisnike"
+          onRun={() =>
+            runAction(normalizeUserPreferenceVectors, setPreferenceVectors)
+          }
+        />
+      </section>
+    </div>
+  );
+}
+
+function StatCard({ title, value }: { title: string; value: number }) {
+  return (
+    <article className="rounded-[1.5rem] border border-[var(--border)] bg-white p-6 shadow-softer">
+      <p className="text-sm text-muted">{title}</p>
+      <p className="mt-2 font-display text-4xl font-semibold tracking-tight">
+        {value}
+      </p>
+    </article>
   );
 }
 
@@ -170,30 +246,5 @@ function AdminActionCard({
         </p>
       )}
     </article>
-  );
-}
-
-function AdminLinkCard({
-  href,
-  icon,
-  title,
-  text,
-}: {
-  href: string;
-  icon: ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="rounded-[1.5rem] border border-[var(--border)] bg-white p-5 shadow-softer transition hover:-translate-y-0.5 hover:border-primary/40"
-    >
-      <span className="grid size-11 place-items-center rounded-2xl bg-primary-soft text-primary">
-        {icon}
-      </span>
-      <h3 className="mt-4 font-display text-xl font-semibold">{title}</h3>
-      <p className="mt-1 text-sm leading-6 text-muted">{text}</p>
-    </Link>
   );
 }

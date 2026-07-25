@@ -78,6 +78,10 @@ public class SalonRepository
     {
         return await _salons.Find(_ => true).ToListAsync();
     }
+    public async Task<long> CountAsync()
+    {
+        return await _salons.CountDocumentsAsync(_ => true);
+    }
     public async Task AddServiceAsync(string userId, SalonService service)
     {
         var update = Builders<Salon>.Update

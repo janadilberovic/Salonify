@@ -36,6 +36,21 @@ public class AppointmentRepository
         return await _appointments.Find(_ => true).ToListAsync();
     }
 
+    public async Task DeleteByUserIdAsync(string userId)
+    {
+        await _appointments.DeleteManyAsync(a => a.UserId == userId);
+    }
+
+    public async Task DeleteBySalonIdAsync(string salonId)
+    {
+        await _appointments.DeleteManyAsync(a => a.SalonId == salonId);
+    }
+
+    public async Task<long> CountAsync()
+    {
+        return await _appointments.CountDocumentsAsync(_ => true);
+    }
+
     public async Task<List<Appointment>> GetByUserIdAsync(string userId)
     {
         return await _appointments.Find(a => a.UserId == userId).ToListAsync();
