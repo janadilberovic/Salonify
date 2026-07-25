@@ -20,4 +20,9 @@ public class UserActivityRepository
             .Find(x => x.UserId == userId)
             .ToListAsync();
     }
+
+    public async Task DeleteByUserIdAsync(string userId)
+    {
+        await _userActivities.DeleteManyAsync(x => x.UserId == userId);
+    }
 }

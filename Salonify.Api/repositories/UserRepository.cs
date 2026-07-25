@@ -29,6 +29,24 @@ public class UserRepository
         await _users.InsertOneAsync(user);
     }
 
+    public async Task<List<User>> GetAllAsync()
+    {
+        return await _users
+            .Find(_ => true)
+            .SortByDescending(u => u.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task DeleteAsync(string id)
+    {
+        await _users.DeleteOneAsync(u => u.Id == id);
+    }
+
+    public async Task<long> CountAsync()
+    {
+        return await _users.CountDocumentsAsync(_ => true);
+    }
+
     public async Task IncrementPreferenceAsync(string userId, string featureKey, double amount)
     {
         var user = await GetByIdAsync(userId);

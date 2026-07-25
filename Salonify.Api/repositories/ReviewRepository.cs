@@ -43,6 +43,21 @@ public class ReviewRepository
         return await _reviews.Find(_ => true).ToListAsync();
     }
 
+    public async Task DeleteByUserIdAsync(string userId)
+    {
+        await _reviews.DeleteManyAsync(a => a.UserId == userId);
+    }
+
+    public async Task DeleteBySalonIdAsync(string salonId)
+    {
+        await _reviews.DeleteManyAsync(a => a.SalonId == salonId);
+    }
+
+    public async Task<long> CountAsync()
+    {
+        return await _reviews.CountDocumentsAsync(_ => true);
+    }
+
     //get reviews by user
     public async Task<List<Review>> GetReviewsByUser(string userId)
     {
