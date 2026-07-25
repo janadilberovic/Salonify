@@ -1,0 +1,22 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+.tmp/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.user
+*.suo
+
+# User-uploaded content (runtime data)
+Salonify.Api/wwwroot/uploads/
+
+# Logs
+*.log
+
+# OS files
+Thumbs.db
+.DS_Store
